@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { checkoutSchema, CheckoutPayload } from '@/lib/validators';
+import { checkoutFormSchema, CheckoutFormPayload } from '@/lib/validators';
 import { useCart } from '@/lib/use-cart';
 import { cartSubtotal } from '@/lib/cart';
 import { formatCurrency } from '@/lib/formatters';
@@ -16,46 +16,72 @@ export default function CheckoutPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState('');
-  const form = useForm<CheckoutPayload>({
-    resolver: zodResolver(checkoutSchema),
-    defaultValues: { customerName: '', customerPhone: '', orderType: 'delivery', paymentMethod: 'cash_on_delivery', area: '', address: '', notes: '', items: [] },
+  const form = useForm<CheckoutFormPayload>({
+    resolver: zodResolver(checkoutFormSchema),
+    defaultValues: {
+      customerName: '',
+      customerPhone: '',
+      orderType: 'delivery',
+      paymentMethod: 'cash_on_delivery',
+      area: '',
+      address: '',
+      notes: '',
+    },
   });
 
-  async function onSubmit(values: CheckoutPayload) {
-    setLoading(true);
-    setSubmitError('');
-    const payload = { ...values, items: items.map((i) => ({ menu_item_id: i.menu_item_id, quantity: i.quantity })) };
-
-    const res = await fetch('/api/checkout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    const data = await res.json();
-    setLoading(false);
-    if (!res.ok) {
-      const fallback = 'Could not place your order. Please try again.';
-      const errorMessage = typeof data?.error === 'string'
-        ? data.error
-        : (data?.error?.formErrors?.[0] ?? fallback);
-      return setSubmitError(errorMessage);
+  async function onSubmit(values: CheckoutFormPayload) {
+    if (!items.length) {
+      setSubmitError('Your cart is empty. Add items before placing an order.');
+      return;
     }
 
-    clear();
+    setLoading(true);
+    setSubmitError('');
 
-    const params = new URLSearchParams({
-      total: String(data.total),
-      payment: data.paymentMethod,
-      type: data.orderType,
-      wa: data.whatsappUrl,
-      paymentStatus: data.paymentStatus,
-      paymentNumber: data.paymentNumber ?? '',
-      restaurantPhone: data.restaurantPhone ?? '',
-      customerPhone: data.customerPhone ?? '',
-    });
+    const payload = {
+      ...values,
+      items: items.map((i) => ({ menu_item_id: i.menu_item_id, quantity: i.quantity })),
+    };
 
-    router.push(`${data.redirectTo}?${params.toString()}`);
+    try {
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        const fallback = 'Could not place your order. Please try again.';
+        const errorMessage = typeof data?.error === 'string'
+          ? data.error
+          : (data?.error?.formErrors?.[0] ?? fallback);
+        console.error('Checkout submission failed', { status: res.status, data });
+        setSubmitError(errorMessage);
+        return;
+      }
+
+      clear();
+
+      const params = new URLSearchParams({
+        total: String(data.total),
+        payment: data.paymentMethod,
+        type: data.orderType,
+        wa: data.whatsappUrl,
+        paymentStatus: data.paymentStatus,
+        paymentNumber: data.paymentNumber ?? '',
+        restaurantPhone: data.restaurantPhone ?? '',
+        customerPhone: data.customerPhone ?? '',
+      });
+
+      router.push(`${data.redirectTo}?${params.toString()}`);
+    } catch (error) {
+      console.error('Unexpected checkout submission error', error);
+      setSubmitError('Something went wrong while placing your order. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   const orderType = form.watch('orderType');
@@ -100,8 +126,8 @@ export default function CheckoutPage() {
               <option value="pay_on_pickup">Pay on Pickup</option>
               <option value="send_money">Send Money</option>
             </select>
-            {submitError && <p className="text-sm text-red-400">{submitError}</p>}
-            <button disabled={loading || !items.length} className="btn-primary w-full">{loading ? 'Placing order...' : `Place Order · ${formatCurrency(total)}`}</button>
+            {submitError && <p className="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">{submitError}</p>}
+            <button type="submit" disabled={loading || !items.length} className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-70">{loading ? 'Placing order...' : `Place Order · ${formatCurrency(total)}`}</button>
           </form>
 
           <aside className="rounded-2xl border border-border bg-card p-4">

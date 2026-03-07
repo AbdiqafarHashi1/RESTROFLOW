@@ -62,28 +62,62 @@ export async function upsertCategory(formData: FormData) {
   revalidatePath('/admin/menu');
 }
 
-export async function updateRestaurantSettings(formData: FormData) {
-  const supabase = createServerClient();
-  const values = {
-    name: String(formData.get('name') ?? ''),
-    description: String(formData.get('description') ?? ''),
-    phone: String(formData.get('phone') ?? ''),
-    whatsapp_number: String(formData.get('whatsapp_number') ?? ''),
-    payment_number: String(formData.get('payment_number') ?? ''),
-    address: String(formData.get('address') ?? ''),
-    service_area: String(formData.get('service_area') ?? ''),
-    delivery_fee: Number(formData.get('delivery_fee') ?? 0),
-    opening_hours: String(formData.get('opening_hours') ?? ''),
-    is_open: formData.get('is_open') === 'on',
-    hero_title: String(formData.get('hero_title') ?? ''),
-    hero_subtitle: String(formData.get('hero_subtitle') ?? ''),
-    updated_at: new Date().toISOString(),
-  };
+export type UpdateRestaurantSettingsState = {
+  success: boolean;
+  message: string;
+};
 
-  await supabase.from('restaurants').update(values).eq('slug', 'beirut-express');
+export const defaultUpdateRestaurantSettingsState: UpdateRestaurantSettingsState = {
+  success: false,
+  message: '',
+};
 
-  revalidatePath('/');
-  revalidatePath('/menu');
-  revalidatePath('/checkout');
-  revalidatePath('/admin/settings');
+export async function updateRestaurantSettings(
+  _previousState: UpdateRestaurantSettingsState,
+  formData: FormData,
+): Promise<UpdateRestaurantSettingsState> {
+  try {
+    const supabase = createServerClient();
+    const values = {
+      name: String(formData.get('name') ?? ''),
+      description: String(formData.get('description') ?? ''),
+      phone: String(formData.get('phone') ?? ''),
+      whatsapp_number: String(formData.get('whatsapp_number') ?? ''),
+      payment_number: String(formData.get('payment_number') ?? ''),
+      address: String(formData.get('address') ?? ''),
+      service_area: String(formData.get('service_area') ?? ''),
+      delivery_fee: Number(formData.get('delivery_fee') ?? 0),
+      opening_hours: String(formData.get('opening_hours') ?? ''),
+      is_open: formData.get('is_open') === 'on',
+      hero_title: String(formData.get('hero_title') ?? ''),
+      hero_subtitle: String(formData.get('hero_subtitle') ?? ''),
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await supabase.from('restaurants').update(values).eq('slug', 'beirut-express');
+
+    if (error) {
+      console.error('Failed to update restaurant settings', error);
+      return {
+        success: false,
+        message: 'Could not save settings. Please try again.',
+      };
+    }
+
+    revalidatePath('/');
+    revalidatePath('/menu');
+    revalidatePath('/checkout');
+    revalidatePath('/admin/settings');
+
+    return {
+      success: true,
+      message: 'Settings saved successfully.',
+    };
+  } catch (error) {
+    console.error('Unexpected settings update error', error);
+    return {
+      success: false,
+      message: 'Unexpected error while saving settings. Please try again.',
+    };
+  }
 }
