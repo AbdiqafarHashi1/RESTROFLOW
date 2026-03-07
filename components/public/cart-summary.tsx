@@ -9,10 +9,10 @@ export function CartSummary({ items }: { items: CartItem[] }) {
   if (!items.length) return null;
   const qty = items.reduce((sum, item) => sum + item.quantity, 0);
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-50 md:left-auto md:right-8 md:w-96">
-      <Link href="/checkout" className="flex items-center justify-between rounded-2xl bg-primary px-5 py-4 text-black shadow-lg shadow-black/30">
+    <div className="fixed bottom-3 left-3 right-3 z-50 md:bottom-4 md:left-auto md:right-8 md:w-96">
+      <Link href="/checkout" className="flex items-center justify-between rounded-2xl bg-primary px-4 py-3.5 text-black shadow-lg shadow-black/30 md:px-5 md:py-4">
         <span className="font-semibold">{qty} item(s)</span>
-        <span className="text-sm">Checkout · {formatCurrency(cartSubtotal(items))}</span>
+        <span className="text-xs md:text-sm">Checkout · {formatCurrency(cartSubtotal(items))}</span>
       </Link>
     </div>
   );

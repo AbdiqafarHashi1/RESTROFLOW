@@ -9,16 +9,16 @@ export function MenuItemCard({ item, onAdd }: { item: MenuItem; onAdd: (item: Me
   const [src, setSrc] = useState(item.image_url || '/images/placeholder-food.svg');
 
   return (
-    <article className="rounded-2xl border border-border bg-card p-3">
-      <div className="relative mb-3 h-36 overflow-hidden rounded-xl">
+    <article className="rounded-2xl border border-border bg-card p-3 md:p-3.5">
+      <div className="relative mb-2.5 h-32 md:mb-3 md:h-36 overflow-hidden rounded-xl">
         <Image src={src} alt={item.name} fill className="object-cover" onError={() => setSrc('/images/placeholder-food.svg')} />
       </div>
-      <div className="space-y-2">
+      <div className="space-y-1.5 md:space-y-2">
         <div className="flex items-start justify-between gap-2">
           <h3 className="font-medium">{item.name}</h3>
           <p className="text-primary">{formatCurrency(item.price)}</p>
         </div>
-        <p className="text-xs text-muted">{item.description}</p>
+        <p className="text-[11px] text-muted md:text-xs">{item.description}</p>
         <button className="btn-primary w-full py-2 text-sm" onClick={() => onAdd(item)}>Add to Cart</button>
       </div>
     </article>
