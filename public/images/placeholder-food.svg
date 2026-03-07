@@ -1,0 +1,8 @@
+<svg width="800" height="600" viewBox="0 0 800 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="600" fill="#1B1B1B"/>
+  <rect x="40" y="40" width="720" height="520" rx="24" fill="#262626" stroke="#3A3A3A"/>
+  <circle cx="260" cy="300" r="90" fill="#C8A45D"/>
+  <circle cx="400" cy="300" r="90" fill="#8D5C2A"/>
+  <circle cx="540" cy="300" r="90" fill="#C8A45D"/>
+  <text x="400" y="520" text-anchor="middle" fill="#F3E8CF" font-family="Arial, sans-serif" font-size="36">Beirut Express</text>
+</svg>
