@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { MessageCircle } from 'lucide-react';
 import { useCart } from '@/lib/use-cart';
 
 export function Navbar() {
@@ -36,7 +35,6 @@ export function Navbar() {
         </nav>
         <div className="flex items-center gap-2">
           <button type="button" onClick={handleOrderNow} className="btn-primary py-2 text-sm">Order Now</button>
-          <a href="https://wa.me/254700000001" className="btn-secondary hidden py-2 text-sm md:inline-flex"><MessageCircle className="mr-2 h-4 w-4" />WhatsApp</a>
         </div>
       </div>
     </header>
