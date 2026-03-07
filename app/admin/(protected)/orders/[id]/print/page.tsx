@@ -14,21 +14,29 @@ export default async function AdminPrintableOrderPage({ params }: { params: { id
 
   if (!order) notFound();
 
+  const { data: restaurant } = await supabase
+    .from('restaurants')
+    .select('name,phone,address')
+    .eq('slug', 'beirut-express')
+    .single();
+
   const { data: items } = await supabase
     .from('order_items')
     .select('id,item_name,quantity,unit_price,total_price')
     .eq('order_id', order.id);
 
   return (
-    <main className="mx-auto max-w-3xl p-4 print:max-w-none print:p-0">
-      <div className="mb-4 flex items-center justify-between print:hidden">
+    <main className="print-receipt-page mx-auto max-w-3xl p-4 print:max-w-none print:p-0">
+      <div className="print-controls mb-4 flex items-center justify-between print:hidden">
         <PrintButton />
       </div>
 
-      <section className="rounded-xl border border-border bg-white p-6 text-black print:rounded-none print:border-0">
-        <div className="border-b border-black/20 pb-3">
-          <h1 className="text-2xl font-semibold">Beirut Express</h1>
-          <p className="text-sm">Order Receipt</p>
+      <section className="receipt-paper rounded-xl border border-border bg-white p-6 text-black print:rounded-none print:border-0 print:p-4">
+        <div className="border-b border-black/20 pb-3 text-center">
+          <h1 className="text-2xl font-semibold">{restaurant?.name || 'Beirut Express'}</h1>
+          <p className="mt-1 text-sm">{restaurant?.phone || '-'}</p>
+          <p className="text-sm">{restaurant?.address || '-'}</p>
+          <p className="mt-1 text-sm font-medium">Order Receipt</p>
         </div>
 
         <div className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
@@ -36,17 +44,20 @@ export default async function AdminPrintableOrderPage({ params }: { params: { id
             <p><span className="font-semibold">Order #:</span> {order.order_number}</p>
             <p><span className="font-semibold">Date:</span> {formatDateTime(order.created_at)}</p>
             <p><span className="font-semibold">Order type:</span> {order.order_type}</p>
+            <p><span className="font-semibold">Payment method:</span> {order.payment_method}</p>
+            <p><span className="font-semibold">Payment status:</span> {order.payment_status}</p>
+            <p><span className="font-semibold">Order status:</span> {order.order_status}</p>
           </div>
           <div>
             <p><span className="font-semibold">Customer:</span> {order.customer_name}</p>
             <p><span className="font-semibold">Phone:</span> {order.customer_phone}</p>
-            <p><span className="font-semibold">Area:</span> {order.area || '-'}</p>
+            {order.order_type === 'delivery' && <p><span className="font-semibold">Area:</span> {order.area || '-'}</p>}
           </div>
         </div>
 
         <div className="mt-3 text-sm">
-          <p><span className="font-semibold">Address:</span> {order.address || '-'}</p>
-          <p><span className="font-semibold">Notes:</span> {order.notes || '-'}</p>
+          {order.order_type === 'delivery' && <p><span className="font-semibold">Address:</span> {order.address || '-'}</p>}
+          {order.notes && <p><span className="font-semibold">Notes:</span> {order.notes}</p>}
         </div>
 
         <table className="mt-5 w-full border-collapse text-sm">
@@ -76,10 +87,9 @@ export default async function AdminPrintableOrderPage({ params }: { params: { id
           <p className="flex justify-between border-t border-black/40 pt-2 font-semibold"><span>Total</span><span>{formatCurrency(Number(order.total))}</span></p>
         </div>
 
-        <div className="mt-5 grid gap-2 border-t border-black/20 pt-3 text-sm sm:grid-cols-2">
-          <p><span className="font-semibold">Payment method:</span> {order.payment_method}</p>
-          <p><span className="font-semibold">Payment status:</span> {order.payment_status}</p>
-          <p><span className="font-semibold">Order status:</span> {order.order_status}</p>
+        <div className="mt-5 border-t border-black/20 pt-3 text-center text-sm">
+          <p className="font-medium">Prepared by Beirut Express</p>
+          <p>Printed at: {formatDateTime(new Date().toISOString())}</p>
         </div>
       </section>
     </main>
