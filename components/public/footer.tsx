@@ -17,7 +17,6 @@ export function SiteFooter({ restaurant }: { restaurant: Restaurant }) {
             <Link href="/">Home</Link>
             <a href="#menu-section">Order Menu</a>
             <Link href="/checkout">Checkout</Link>
-            <Link href="/admin/login">Admin</Link>
           </div>
         </div>
         <div>
@@ -30,7 +29,8 @@ export function SiteFooter({ restaurant }: { restaurant: Restaurant }) {
         </div>
       </div>
       <div className="border-t border-border py-4 text-center text-xs text-muted">
-        © {new Date().getFullYear()} Beirut Express. All rights reserved.
+        <p>© {new Date().getFullYear()} Beirut Express. All rights reserved.</p>
+        <Link href="/admin/login" className="mt-1 inline-block text-[11px] text-muted/70 hover:text-muted">Admin access</Link>
       </div>
     </footer>
   );

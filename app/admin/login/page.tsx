@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@/lib/supabase/client';
 
@@ -8,14 +8,33 @@ export default function AdminLoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    const supabase = createBrowserClient();
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) {
+        router.replace('/admin');
+      }
+    });
+  }, [router]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setLoading(true);
+    setError('');
+
     const supabase = createBrowserClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return setError(error.message);
-    router.push('/admin');
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+    setLoading(false);
+
+    if (signInError) {
+      setError(signInError.message);
+      return;
+    }
+
+    router.replace('/admin');
   }
 
   return (
@@ -25,7 +44,7 @@ export default function AdminLoginPage() {
         <input className="input" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" />
         <input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" />
         {error && <p className="text-sm text-red-400">{error}</p>}
-        <button className="btn-primary w-full">Sign in</button>
+        <button disabled={loading} className="btn-primary w-full">{loading ? 'Signing in...' : 'Sign in'}</button>
       </form>
     </main>
   );

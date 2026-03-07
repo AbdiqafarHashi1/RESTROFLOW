@@ -18,7 +18,7 @@ export function HeroSection() {
           <div className="rounded-xl border border-border bg-card p-3"><Clock3 className="mb-2 h-4 w-4 text-primary" />Prepared fresh to order</div>
         </div>
       </div>
-      <div className="min-h-80 overflow-hidden rounded-3xl border border-border bg-[url('https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1400&auto=format&fit=crop')] bg-cover bg-center shadow-2xl shadow-black/30" />
+      <div className="min-h-80 overflow-hidden rounded-3xl border border-border bg-[url('/images/hero-food.svg')] bg-cover bg-center shadow-2xl shadow-black/30" />
     </section>
   );
 }
