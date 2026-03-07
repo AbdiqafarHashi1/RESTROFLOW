@@ -105,10 +105,10 @@ export default function CheckoutPage() {
   return (
     <div>
       <Navbar />
-      <main className="container-padding mx-auto max-w-4xl py-6">
+      <main className="container-padding mx-auto max-w-4xl py-4 md:py-6">
         <h1 className="section-title">Checkout</h1>
-        <div className="mt-5 grid gap-5 lg:grid-cols-[1.25fr_.9fr]">
-          <form className="space-y-3 rounded-2xl border border-border bg-card p-4" onSubmit={form.handleSubmit(onSubmit)}>
+        <div className="mt-4 grid gap-4 md:mt-5 md:gap-5 lg:grid-cols-[1.25fr_.9fr]">
+          <form className="space-y-3 rounded-2xl border border-border bg-card p-3.5 md:p-4" onSubmit={form.handleSubmit(onSubmit)}>
             <input className="input" placeholder="Full name" {...form.register('customerName')} />
             {form.formState.errors.customerName && <p className="text-xs text-red-400">Enter a valid name.</p>}
             <input className="input" placeholder="Phone number" {...form.register('customerPhone')} />
@@ -130,7 +130,7 @@ export default function CheckoutPage() {
             <button type="submit" disabled={loading || !items.length} className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-70">{loading ? 'Placing order...' : `Place Order · ${formatCurrency(total)}`}</button>
           </form>
 
-          <aside className="rounded-2xl border border-border bg-card p-4">
+          <aside className="rounded-2xl border border-border bg-card p-3.5 md:p-4">
             <p className="font-medium">Order Summary</p>
             <div className="mt-3 space-y-3">
               {items.map((item) => (

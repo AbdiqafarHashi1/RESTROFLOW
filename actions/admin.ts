@@ -21,6 +21,30 @@ export async function updateOrderStatuses(formData: FormData) {
   revalidatePath('/admin');
   revalidatePath('/admin/orders');
   revalidatePath(`/admin/orders/${orderId}`);
+  revalidatePath(`/admin/orders/${orderId}/print`);
+}
+
+
+export async function quickUpdateOrderState(formData: FormData) {
+  const orderId = String(formData.get('orderId') ?? '');
+  const orderStatus = formData.get('orderStatus');
+  const paymentStatus = formData.get('paymentStatus');
+
+  if (!orderId) return;
+
+  const payload: { order_status?: string; payment_status?: string } = {};
+  if (typeof orderStatus === 'string' && orderStatus) payload.order_status = orderStatus;
+  if (typeof paymentStatus === 'string' && paymentStatus) payload.payment_status = paymentStatus;
+
+  if (!Object.keys(payload).length) return;
+
+  const supabase = createServerClient();
+  await supabase.from('orders').update(payload).eq('id', orderId);
+
+  revalidatePath('/admin');
+  revalidatePath('/admin/orders');
+  revalidatePath(`/admin/orders/${orderId}`);
+  revalidatePath(`/admin/orders/${orderId}/print`);
 }
 
 export async function upsertMenuItem(formData: FormData) {
