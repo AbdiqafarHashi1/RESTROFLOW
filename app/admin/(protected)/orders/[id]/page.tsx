@@ -24,12 +24,20 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
     .eq('order_id', order.id);
 
   const normalizedPhone = order.customer_phone.replace(/\s+/g, '').replace('+', '');
+  const canPrintReceipt = order.payment_method !== 'send_money' || order.payment_status === 'confirmed';
 
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="section-title">Order {order.order_number}</h1>
-        <Link href={`/admin/orders/${order.id}/print`} className="btn-secondary" target="_blank">Print Receipt</Link>
+        {canPrintReceipt ? (
+          <Link href={`/admin/orders/${order.id}/print`} className="btn-secondary" target="_blank">Print Receipt</Link>
+        ) : (
+          <div className="text-right">
+            <button type="button" className="btn-secondary cursor-not-allowed opacity-50" disabled>Print Receipt</button>
+            <p className="mt-1 text-xs text-muted">Waiting for payment confirmation.</p>
+          </div>
+        )}
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[1.25fr_.9fr]">
