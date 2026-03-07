@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { checkoutSchema } from '@/lib/validators';
-import { createRouteClient } from '@/lib/supabase/server';
+import { createRouteClient, createServiceRoleClient } from '@/lib/supabase/server';
 import { generateOrderNumber } from '@/lib/order';
 import { buildWhatsAppUrl } from '@/lib/whatsapp';
 
@@ -24,6 +24,8 @@ export async function POST(request: Request) {
     }
 
     const supabase = createRouteClient();
+    const serviceRoleKeyPresent = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
+    console.info('Checkout runtime env check', { serviceRoleKeyPresent });
 
     const { data: restaurant, error: restaurantError } = await supabase
       .from('restaurants')
@@ -62,12 +64,16 @@ export async function POST(request: Request) {
     const total = subtotal + deliveryFee;
     const paymentStatus = buildPaymentStatus(payload.paymentMethod);
 
+    const adminSupabase = createServiceRoleClient();
+    console.info('Checkout write client selected', { helper: 'createServiceRoleClient' });
+
     let order: { id: string; order_number: string } | null = null;
     let attempts = 0;
     while (!order && attempts < 4) {
       attempts += 1;
       const orderNumber = generateOrderNumber(Math.floor(Math.random() * 999999));
-      const { data: created, error } = await supabase.from('orders').insert({
+      console.info('Checkout before orders insert', { attempt: attempts, orderNumber });
+      const { data: created, error } = await adminSupabase.from('orders').insert({
         restaurant_id: restaurant.id,
         order_number: orderNumber,
         customer_name: payload.customerName,
@@ -85,12 +91,14 @@ export async function POST(request: Request) {
       }).select('id,order_number').single();
 
       if (error) {
+        console.error('Checkout orders insert error object', error);
         if (error.code === '23505') {
           continue;
         }
         console.error('Checkout order insert failed', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
       }
+      console.info('Checkout after orders insert', { orderId: created?.id, orderNumber: created?.order_number });
       order = created;
     }
 
@@ -110,23 +118,28 @@ export async function POST(request: Request) {
       };
     });
 
-    const { error: orderItemsError } = await supabase.from('order_items').insert(orderItems);
+    console.info('Checkout before order_items insert', { orderId: order.id, count: orderItems.length });
+    const { error: orderItemsError } = await adminSupabase.from('order_items').insert(orderItems);
     if (orderItemsError) {
-      console.error('Checkout order items insert failed', orderItemsError);
-      await supabase.from('orders').delete().eq('id', order.id);
+      console.error('Checkout order_items insert error object', orderItemsError);
+      await adminSupabase.from('orders').delete().eq('id', order.id);
       return NextResponse.json({ error: orderItemsError.message }, { status: 500 });
     }
 
-    const { error: customerRpcError } = await supabase.rpc('upsert_customer_from_order', {
+    console.info('Checkout after order_items insert', { orderId: order.id });
+    console.info('Checkout before customers upsert', { customerPhone: payload.customerPhone });
+    const { error: customerRpcError } = await adminSupabase.rpc('upsert_customer_from_order', {
       p_restaurant_id: restaurant.id,
       p_name: payload.customerName,
       p_phone: payload.customerPhone,
     });
 
     if (customerRpcError) {
-      console.error('Checkout customer upsert failed', customerRpcError);
+      console.error('Checkout customers upsert error object', customerRpcError);
       return NextResponse.json({ error: 'Order created, but customer profile update failed.' }, { status: 500 });
     }
+
+    console.info('Checkout after customers upsert', { customerPhone: payload.customerPhone });
 
     const whatsappUrl = buildWhatsAppUrl({
       whatsappNumber: restaurant.whatsapp_number ?? '',
