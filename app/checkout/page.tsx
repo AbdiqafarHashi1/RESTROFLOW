@@ -25,19 +25,37 @@ export default function CheckoutPage() {
     setLoading(true);
     setSubmitError('');
     const payload = { ...values, items: items.map((i) => ({ menu_item_id: i.menu_item_id, quantity: i.quantity })) };
+
     const res = await fetch('/api/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
+
     const data = await res.json();
     setLoading(false);
     if (!res.ok) {
-      return setSubmitError(data?.error ?? 'Could not place your order. Please try again.');
+      const fallback = 'Could not place your order. Please try again.';
+      const errorMessage = typeof data?.error === 'string'
+        ? data.error
+        : (data?.error?.formErrors?.[0] ?? fallback);
+      return setSubmitError(errorMessage);
     }
+
     clear();
-    const params = new URLSearchParams({ total: String(data.total), payment: data.paymentMethod, type: data.orderType, wa: data.whatsappUrl });
-    router.push(`/order/success/${data.orderNumber}?${params.toString()}`);
+
+    const params = new URLSearchParams({
+      total: String(data.total),
+      payment: data.paymentMethod,
+      type: data.orderType,
+      wa: data.whatsappUrl,
+      paymentStatus: data.paymentStatus,
+      paymentNumber: data.paymentNumber ?? '',
+      restaurantPhone: data.restaurantPhone ?? '',
+      customerPhone: data.customerPhone ?? '',
+    });
+
+    router.push(`${data.redirectTo}?${params.toString()}`);
   }
 
   const orderType = form.watch('orderType');
@@ -72,10 +90,16 @@ export default function CheckoutPage() {
             <select className="input" {...form.register('orderType')}><option value="delivery">Delivery</option><option value="pickup">Pickup</option></select>
             {orderType === 'delivery' && <>
               <input className="input" placeholder="Area / Estate" {...form.register('area')} />
+              {form.formState.errors.area && <p className="text-xs text-red-400">Area is required for delivery.</p>}
               <textarea className="input" placeholder="Exact address or landmark" {...form.register('address')} />
+              {form.formState.errors.address && <p className="text-xs text-red-400">Address is required for delivery.</p>}
             </>}
             <textarea className="input" placeholder="Notes (optional)" {...form.register('notes')} />
-            <select className="input" {...form.register('paymentMethod')}><option value="cash_on_delivery">Cash on Delivery</option><option value="pay_on_pickup">Pay on Pickup</option></select>
+            <select className="input" {...form.register('paymentMethod')}>
+              <option value="cash_on_delivery">Cash on Delivery</option>
+              <option value="pay_on_pickup">Pay on Pickup</option>
+              <option value="send_money">Send Money</option>
+            </select>
             {submitError && <p className="text-sm text-red-400">{submitError}</p>}
             <button disabled={loading || !items.length} className="btn-primary w-full">{loading ? 'Placing order...' : `Place Order · ${formatCurrency(total)}`}</button>
           </form>
