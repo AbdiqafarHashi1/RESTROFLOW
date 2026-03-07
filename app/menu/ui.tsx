@@ -13,11 +13,20 @@ export function MenuClient({ restaurantName, categories, items }: { restaurantNa
   const [query, setQuery] = useState('');
   const { items: cartItems, addItem } = useCart();
 
+  const categorySlugById = useMemo(() => {
+    const map = new Map<string, string>();
+    categories.forEach((category) => map.set(category.id, category.slug));
+    return map;
+  }, [categories]);
+
+  const normalizedQuery = query.trim().toLowerCase();
+
   const filtered = useMemo(() => items.filter((item) => {
-    const byCategory = active === 'all' || categories.find((c) => c.id === item.category_id)?.slug === active;
-    const bySearch = item.name.toLowerCase().includes(query.toLowerCase());
+    const categorySlug = categorySlugById.get(item.category_id);
+    const byCategory = active === 'all' || categorySlug === active;
+    const bySearch = !normalizedQuery || item.name.toLowerCase().includes(normalizedQuery);
     return byCategory && bySearch;
-  }), [active, categories, items, query]);
+  }), [active, categorySlugById, items, normalizedQuery]);
 
   return (
     <div>

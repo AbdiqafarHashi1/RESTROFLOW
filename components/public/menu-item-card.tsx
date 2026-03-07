@@ -10,8 +10,15 @@ export function MenuItemCard({ item, onAdd }: { item: MenuItem; onAdd: (item: Me
 
   return (
     <article className="rounded-2xl border border-border bg-card p-3 md:p-3.5">
-      <div className="relative mb-2.5 h-32 md:mb-3 md:h-36 overflow-hidden rounded-xl">
-        <Image src={src} alt={item.name} fill className="object-cover" onError={() => setSrc('/images/placeholder-food.svg')} />
+      <div className="relative mb-2.5 h-32 overflow-hidden rounded-xl md:mb-3 md:h-36">
+        <Image
+          src={src}
+          alt={item.name}
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          className="object-cover"
+          onError={() => setSrc('/images/placeholder-food.svg')}
+        />
       </div>
       <div className="space-y-1.5 md:space-y-2">
         <div className="flex items-start justify-between gap-2">
