@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createServerClient } from '@/lib/supabase/server';
+import type { UpdateRestaurantSettingsState } from '@/lib/admin-settings';
 
 function slugify(value: string) {
   return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
@@ -61,16 +62,6 @@ export async function upsertCategory(formData: FormData) {
   revalidatePath('/admin/categories');
   revalidatePath('/admin/menu');
 }
-
-export type UpdateRestaurantSettingsState = {
-  success: boolean;
-  message: string;
-};
-
-export const defaultUpdateRestaurantSettingsState: UpdateRestaurantSettingsState = {
-  success: false,
-  message: '',
-};
 
 export async function updateRestaurantSettings(
   _previousState: UpdateRestaurantSettingsState,
