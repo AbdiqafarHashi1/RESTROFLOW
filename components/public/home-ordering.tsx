@@ -26,8 +26,8 @@ export function HomeOrdering({ restaurant, categories, items }: { restaurant: Re
 
   return (
     <div>
-      <Navbar />
-      <HeroSection />
+      <Navbar restaurantName={restaurant.name} />
+      <HeroSection restaurant={restaurant} />
 
       <section id="bestsellers" className="container-padding mx-auto max-w-6xl py-8">
         <h2 className="section-title">Best Sellers</h2>
@@ -76,15 +76,15 @@ export function HomeOrdering({ restaurant, categories, items }: { restaurant: Re
       </section>
 
       <section className="container-padding mx-auto grid max-w-6xl gap-4 py-4 md:grid-cols-3">
-        <div className="rounded-2xl border border-border bg-card p-5"><h3 className="font-heading text-2xl">Why choose Beirut</h3><p className="mt-2 text-sm text-muted">Authentic spice profile, balanced portions, and quality ingredients prepped daily.</p></div>
-        <div id="delivery-info" className="rounded-2xl border border-border bg-card p-5"><h3 className="font-heading text-2xl">Delivery & Pickup</h3><p className="mt-2 text-sm text-muted">Delivering to {restaurant.service_area}. Pickup available at BBS Mall.</p></div>
-        <div id="how-it-works" className="rounded-2xl border border-border bg-card p-5"><h3 className="font-heading text-2xl">How ordering works</h3><p className="mt-2 text-sm text-muted">Add items → choose delivery or pickup → confirm via WhatsApp → pay on arrival.</p></div>
+        <div className="rounded-2xl border border-border bg-card p-5"><h3 className="font-heading text-2xl">About {restaurant.name}</h3><p className="mt-2 text-sm text-muted">{restaurant.description || 'Authentic spice profile, balanced portions, and quality ingredients prepped daily.'}</p></div>
+        <div id="delivery-info" className="rounded-2xl border border-border bg-card p-5"><h3 className="font-heading text-2xl">Delivery & Pickup</h3><p className="mt-2 text-sm text-muted">Delivering to {restaurant.service_area || '-'}.</p><p className="mt-2 text-sm text-muted">Delivery fee: {formatCurrency(Number(restaurant.delivery_fee ?? 0), restaurant.currency)}</p></div>
+        <div id="how-it-works" className="rounded-2xl border border-border bg-card p-5"><h3 className="font-heading text-2xl">Hours & Status</h3><p className="mt-2 text-sm text-muted">{restaurant.opening_hours || 'Opening hours not set.'}</p><p className="mt-2 text-sm text-muted">Currently: <span className={restaurant.is_open ? 'text-emerald-300' : 'text-red-300'}>{restaurant.is_open ? 'Open' : 'Closed'}</span></p></div>
       </section>
 
       <section className="container-padding mx-auto max-w-6xl py-8">
         <div className="rounded-3xl border border-primary/25 bg-gradient-to-r from-card to-surface p-7">
           <h3 className="font-heading text-3xl">Trusted Taste, Every Order</h3>
-          <p className="mt-2 max-w-2xl text-sm text-muted">From wrap grill to doorstep handoff, Beirut Express is built for reliable quality and speed.</p>
+          <p className="mt-2 max-w-2xl text-sm text-muted">From kitchen to doorstep handoff, {restaurant.name} is built for reliable quality and speed.</p>
         </div>
       </section>
 
@@ -92,7 +92,7 @@ export function HomeOrdering({ restaurant, categories, items }: { restaurant: Re
         <div className="rounded-3xl border border-border bg-card p-7 text-center">
           <h3 className="font-heading text-3xl">Need instant confirmation?</h3>
           <p className="mt-2 text-sm text-muted">Place your order and confirm directly on WhatsApp in one tap.</p>
-          <a href="https://wa.me/254700000001" className="btn-primary mt-4">Chat on WhatsApp</a>
+          <a href={`https://wa.me/${restaurant.whatsapp_number ?? ''}`} className="btn-primary mt-4">Chat on WhatsApp</a>
         </div>
       </section>
 

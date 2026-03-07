@@ -1,12 +1,16 @@
 import Link from 'next/link';
+import { getRestaurant } from '@/lib/data';
 
-export default function OrderSuccessPage({
+export default async function OrderSuccessPage({
   params,
   searchParams,
 }: {
   params: { orderNumber: string };
   searchParams: { total?: string; payment?: string; type?: string; wa?: string };
 }) {
+  const restaurant = await getRestaurant();
+  const whatsappLink = searchParams.wa ?? `https://wa.me/${restaurant.whatsapp_number ?? ''}`;
+
   return (
     <main className="container-padding mx-auto max-w-xl py-10 text-center">
       <p className="text-primary">Order placed successfully</p>
@@ -20,7 +24,7 @@ export default function OrderSuccessPage({
       </div>
 
       <div className="mt-6 flex flex-col gap-3">
-        <a href={searchParams.wa ?? 'https://wa.me/254700000001'} target="_blank" className="btn-primary">WhatsApp Confirmation</a>
+        <a href={whatsappLink} target="_blank" rel="noreferrer" className="btn-primary">WhatsApp Confirmation</a>
         <Link href="/menu" className="btn-secondary">Return to Menu</Link>
       </div>
     </main>

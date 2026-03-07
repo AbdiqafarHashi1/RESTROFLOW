@@ -1,5 +1,6 @@
 import { createServerClient } from '@/lib/supabase/server';
-import { upsertMenuItem } from '@/actions/admin';
+import { deleteMenuItem, upsertMenuItem } from '@/actions/admin';
+import { DeleteMenuItemButton } from '@/components/admin/delete-menu-item-button';
 
 export default async function AdminMenuPage() {
   const supabase = createServerClient();
@@ -13,7 +14,7 @@ export default async function AdminMenuPage() {
     <div>
       <h1 className="section-title">Menu</h1>
 
-      <form action={upsertMenuItem} className="mt-4 rounded-xl border border-border bg-card p-4">
+      <form action={upsertMenuItem} encType="multipart/form-data" className="mt-4 rounded-xl border border-border bg-card p-4">
         <p className="font-medium">Add Menu Item</p>
         <input type="hidden" name="restaurant_id" value={restaurant.id} />
         <div className="mt-3 grid gap-2 md:grid-cols-2">
@@ -23,8 +24,9 @@ export default async function AdminMenuPage() {
             <option value="">Select category</option>
             {(categories ?? []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
-          <input name="image_url" className="input" placeholder="Image URL" />
+          <input name="image_file" className="input" type="file" accept="image/*" />
         </div>
+        <input name="image_url" className="input mt-2" placeholder="Image URL (fallback)" />
         <textarea name="description" className="input mt-2" placeholder="Description" />
         <div className="mt-2 flex flex-wrap gap-3 text-sm">
           <label><input type="checkbox" name="active" defaultChecked /> Active</label>
@@ -36,7 +38,7 @@ export default async function AdminMenuPage() {
 
       <div className="mt-4 space-y-3">
         {(menuItems ?? []).map((item) => (
-          <form key={item.id} action={upsertMenuItem} className="rounded-xl border border-border bg-card p-4">
+          <form key={item.id} action={upsertMenuItem} encType="multipart/form-data" className="rounded-xl border border-border bg-card p-4">
             <input type="hidden" name="id" value={item.id} />
             <input type="hidden" name="restaurant_id" value={restaurant.id} />
             <div className="grid gap-2 md:grid-cols-2">
@@ -45,15 +47,19 @@ export default async function AdminMenuPage() {
               <select name="category_id" className="input" defaultValue={item.category_id} required>
                 {(categories ?? []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
-              <input name="image_url" className="input" defaultValue={item.image_url ?? ''} />
+              <input name="image_file" className="input" type="file" accept="image/*" />
             </div>
+            <input name="image_url" className="input mt-2" defaultValue={item.image_url ?? ''} placeholder="Image URL (fallback)" />
             <textarea name="description" className="input mt-2" defaultValue={item.description ?? ''} />
             <div className="mt-2 flex flex-wrap gap-3 text-sm">
               <label><input type="checkbox" name="active" defaultChecked={item.active} /> Active</label>
               <label><input type="checkbox" name="featured" defaultChecked={item.featured} /> Featured</label>
               <label><input type="checkbox" name="bestseller" defaultChecked={item.bestseller} /> Bestseller</label>
             </div>
-            <button className="btn-secondary mt-3">Save</button>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <button className="btn-secondary">Save</button>
+              <DeleteMenuItemButton formAction={deleteMenuItem} itemName={item.name} />
+            </div>
           </form>
         ))}
       </div>

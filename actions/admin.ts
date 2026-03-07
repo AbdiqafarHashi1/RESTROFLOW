@@ -51,6 +51,28 @@ export async function upsertMenuItem(formData: FormData) {
   const supabase = createServerClient();
   const id = String(formData.get('id') ?? '');
   const name = String(formData.get('name') ?? '');
+  const imageUrlInput = String(formData.get('image_url') ?? '').trim();
+  const imageFile = formData.get('image_file');
+  let imageUrl = imageUrlInput;
+
+  if (imageFile instanceof File && imageFile.size > 0) {
+    const extension = imageFile.name.split('.').pop()?.toLowerCase() || 'jpg';
+    const filePath = `menu-items/${id || slugify(name) || 'item'}-${crypto.randomUUID()}.${extension}`;
+    const { error: uploadError } = await supabase.storage
+      .from('menu-images')
+      .upload(filePath, imageFile, {
+        cacheControl: '3600',
+        upsert: true,
+        contentType: imageFile.type || 'image/jpeg',
+      });
+
+    if (uploadError) {
+      throw new Error(`Image upload failed: ${uploadError.message}`);
+    }
+
+    const { data: publicData } = supabase.storage.from('menu-images').getPublicUrl(filePath);
+    imageUrl = publicData.publicUrl;
+  }
 
   const payload = {
     id: id || undefined,
@@ -60,13 +82,24 @@ export async function upsertMenuItem(formData: FormData) {
     slug: slugify(name),
     description: String(formData.get('description') ?? ''),
     price: Number(formData.get('price') ?? 0),
-    image_url: String(formData.get('image_url') ?? ''),
+    image_url: imageUrl,
     active: formData.get('active') === 'on',
     featured: formData.get('featured') === 'on',
     bestseller: formData.get('bestseller') === 'on',
   };
 
   await supabase.from('menu_items').upsert(payload);
+  revalidatePath('/menu');
+  revalidatePath('/admin/menu');
+}
+
+export async function deleteMenuItem(formData: FormData) {
+  const supabase = createServerClient();
+  const id = String(formData.get('id') ?? '');
+
+  if (!id) return;
+
+  await supabase.from('menu_items').delete().eq('id', id);
   revalidatePath('/menu');
   revalidatePath('/admin/menu');
 }
