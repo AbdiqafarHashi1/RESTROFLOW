@@ -1,7 +1,7 @@
-import { getCategories, getMenuItems } from '@/lib/data';
+import { getCategories, getMenuItems, getRestaurant } from '@/lib/data';
 import { MenuClient } from './ui';
 
 export default async function MenuPage() {
-  const [categories, items] = await Promise.all([getCategories(), getMenuItems()]);
-  return <MenuClient categories={categories} items={items} />;
+  const [restaurant, categories, items] = await Promise.all([getRestaurant(), getCategories(), getMenuItems()]);
+  return <MenuClient restaurantName={restaurant.name} categories={categories} items={items} />;
 }

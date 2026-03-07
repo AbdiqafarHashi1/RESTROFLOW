@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { checkoutFormSchema, CheckoutFormPayload } from '@/lib/validators';
@@ -16,6 +16,10 @@ export default function CheckoutPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [restaurantName, setRestaurantName] = useState('Beirut Express');
+  const [restaurantOpen, setRestaurantOpen] = useState(true);
+  const [restaurantCurrency, setRestaurantCurrency] = useState('KES');
+  const [restaurantDeliveryFee, setRestaurantDeliveryFee] = useState(0);
   const form = useForm<CheckoutFormPayload>({
     resolver: zodResolver(checkoutFormSchema),
     defaultValues: {
@@ -28,6 +32,31 @@ export default function CheckoutPage() {
       notes: '',
     },
   });
+
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadRestaurantSettings() {
+      try {
+        const res = await fetch('/api/restaurant');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!mounted) return;
+        setRestaurantName(data.name ?? 'Beirut Express');
+        setRestaurantOpen(Boolean(data.is_open));
+        setRestaurantCurrency(data.currency ?? 'KES');
+        setRestaurantDeliveryFee(Number(data.delivery_fee ?? 0));
+      } catch {
+        // keep defaults
+      }
+    }
+
+    loadRestaurantSettings();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   async function onSubmit(values: CheckoutFormPayload) {
     if (!items.length) {
@@ -86,13 +115,13 @@ export default function CheckoutPage() {
 
   const orderType = form.watch('orderType');
   const subtotal = cartSubtotal(items);
-  const deliveryFee = orderType === 'delivery' ? 150 : 0;
+  const deliveryFee = orderType === 'delivery' ? restaurantDeliveryFee : 0;
   const total = useMemo(() => subtotal + deliveryFee, [subtotal, deliveryFee]);
 
   if (!items.length) {
     return (
       <div>
-        <Navbar />
+        <Navbar restaurantName={restaurantName} />
         <main className="container-padding mx-auto max-w-xl py-20 text-center">
           <h1 className="font-heading text-4xl">Your cart is empty</h1>
           <p className="mt-3 text-muted">Add your favourite wraps, shawarma and sides before checkout.</p>
@@ -104,7 +133,7 @@ export default function CheckoutPage() {
 
   return (
     <div>
-      <Navbar />
+      <Navbar restaurantName={restaurantName} />
       <main className="container-padding mx-auto max-w-4xl py-4 md:py-6">
         <h1 className="section-title">Checkout</h1>
         <div className="mt-4 grid gap-4 md:mt-5 md:gap-5 lg:grid-cols-[1.25fr_.9fr]">
@@ -127,7 +156,8 @@ export default function CheckoutPage() {
               <option value="send_money">Send Money</option>
             </select>
             {submitError && <p className="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">{submitError}</p>}
-            <button type="submit" disabled={loading || !items.length} className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-70">{loading ? 'Placing order...' : `Place Order · ${formatCurrency(total)}`}</button>
+            {!restaurantOpen && <p className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">This restaurant is currently marked as closed. You can still submit your order for review.</p>}
+            <button type="submit" disabled={loading || !items.length} className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-70">{loading ? 'Placing order...' : `Place Order · ${formatCurrency(total, restaurantCurrency)}`}</button>
           </form>
 
           <aside className="rounded-2xl border border-border bg-card p-3.5 md:p-4">
@@ -142,15 +172,15 @@ export default function CheckoutPage() {
                       <span>{item.quantity}</span>
                       <button type="button" className="rounded-md border border-border px-2" onClick={() => updateQty(item.menu_item_id, item.quantity + 1)}>+</button>
                     </div>
-                    <span>{formatCurrency(item.quantity * item.unit_price)}</span>
+                    <span>{formatCurrency(item.quantity * item.unit_price, restaurantCurrency)}</span>
                   </div>
                 </div>
               ))}
             </div>
             <div className="mt-4 space-y-1 text-sm text-muted">
-              <p className="flex justify-between"><span>Subtotal</span><span>{formatCurrency(subtotal)}</span></p>
-              <p className="flex justify-between"><span>Delivery fee</span><span>{formatCurrency(deliveryFee)}</span></p>
-              <p className="flex justify-between text-base text-white"><span>Total</span><span>{formatCurrency(total)}</span></p>
+              <p className="flex justify-between"><span>Subtotal</span><span>{formatCurrency(subtotal, restaurantCurrency)}</span></p>
+              <p className="flex justify-between"><span>Delivery fee</span><span>{formatCurrency(deliveryFee, restaurantCurrency)}</span></p>
+              <p className="flex justify-between text-base text-white"><span>Total</span><span>{formatCurrency(total, restaurantCurrency)}</span></p>
             </div>
           </aside>
         </div>

@@ -129,7 +129,7 @@ export async function POST(request: Request) {
     }
 
     const whatsappUrl = buildWhatsAppUrl({
-      whatsappNumber: restaurant.whatsapp_number ?? '254700000001',
+      whatsappNumber: restaurant.whatsapp_number ?? '',
       orderNumber: order.order_number,
       customerName: payload.customerName,
       customerPhone: payload.customerPhone,

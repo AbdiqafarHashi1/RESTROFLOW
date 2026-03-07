@@ -8,7 +8,7 @@ import { CartSummary } from '@/components/public/cart-summary';
 import { Navbar } from '@/components/public/navbar';
 import { useCart } from '@/lib/use-cart';
 
-export function MenuClient({ categories, items }: { categories: Category[]; items: MenuItem[] }) {
+export function MenuClient({ restaurantName, categories, items }: { restaurantName: string; categories: Category[]; items: MenuItem[] }) {
   const [active, setActive] = useState('all');
   const [query, setQuery] = useState('');
   const { items: cartItems, addItem } = useCart();
@@ -21,7 +21,7 @@ export function MenuClient({ categories, items }: { categories: Category[]; item
 
   return (
     <div>
-      <Navbar />
+      <Navbar restaurantName={restaurantName} />
       <main className="container-padding mx-auto max-w-6xl py-6">
         <h1 className="section-title">Menu</h1>
         <p className="mt-2 text-sm text-muted">Browse by category and add to cart in seconds.</p>

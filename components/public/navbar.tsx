@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCart } from '@/lib/use-cart';
 
-export function Navbar() {
+export function Navbar({ restaurantName = 'Beirut Express' }: { restaurantName?: string }) {
   const { items } = useCart();
   const router = useRouter();
   const pathname = usePathname();
@@ -26,7 +26,7 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-xl">
       <div className="mx-auto flex max-w-6xl items-center justify-between container-padding py-3 md:py-4">
-        <Link href="/" className="font-heading text-xl tracking-wide">Beirut Express</Link>
+        <Link href="/" className="font-heading text-xl tracking-wide">{restaurantName}</Link>
         <nav className="hidden items-center gap-5 text-sm text-muted md:flex">
           <a href="#bestsellers" className="hover:text-white">Best Sellers</a>
           <a href="#menu-section" className="hover:text-white">Menu</a>
