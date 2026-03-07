@@ -3,8 +3,10 @@ import { upsertCategory } from '@/actions/admin';
 
 export default async function AdminCategoriesPage() {
   const supabase = createServerClient();
-  const { data: restaurant } = await supabase.from('restaurants').select('id').eq('slug', 'beirut-express').single();
-  const { data: categories } = await supabase.from('categories').select('id,name,active').order('sort_order');
+  const [{ data: restaurant }, { data: categories }] = await Promise.all([
+    supabase.from('restaurants').select('id').eq('slug', 'beirut-express').single(),
+    supabase.from('categories').select('id,name,active').order('sort_order'),
+  ]);
 
   if (!restaurant) return <p className="text-muted">Restaurant not found.</p>;
 

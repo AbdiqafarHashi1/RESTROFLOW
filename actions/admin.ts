@@ -3,121 +3,177 @@
 import { revalidatePath } from 'next/cache';
 import { createServerClient } from '@/lib/supabase/server';
 import type { UpdateRestaurantSettingsState } from '@/lib/admin-settings';
+import { defaultUpsertMenuItemState, UpsertMenuItemState } from '@/lib/admin-menu';
+import { getMenuBucketMissingMessage, MENU_IMAGES_BUCKET } from '@/lib/constants/storage';
 
 function slugify(value: string) {
   return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
 }
 
 export async function updateOrderStatuses(formData: FormData) {
-  const orderId = String(formData.get('orderId') ?? '');
-  const orderStatus = String(formData.get('orderStatus') ?? '');
-  const paymentStatus = String(formData.get('paymentStatus') ?? '');
+  try {
+    const orderId = String(formData.get('orderId') ?? '');
+    const orderStatus = String(formData.get('orderStatus') ?? '');
+    const paymentStatus = String(formData.get('paymentStatus') ?? '');
 
-  if (!orderId) return;
+    if (!orderId) return;
 
-  const supabase = createServerClient();
-  await supabase.from('orders').update({ order_status: orderStatus, payment_status: paymentStatus }).eq('id', orderId);
+    const supabase = createServerClient();
+    await supabase.from('orders').update({ order_status: orderStatus, payment_status: paymentStatus }).eq('id', orderId);
 
-  revalidatePath('/admin');
-  revalidatePath('/admin/orders');
-  revalidatePath(`/admin/orders/${orderId}`);
-  revalidatePath(`/admin/orders/${orderId}/print`);
+    revalidatePath('/admin');
+    revalidatePath('/admin/orders');
+    revalidatePath(`/admin/orders/${orderId}`);
+    revalidatePath(`/admin/orders/${orderId}/print`);
+  } catch (error) {
+    console.error('Failed to update order statuses', error);
+  }
 }
 
 
 export async function quickUpdateOrderState(formData: FormData) {
-  const orderId = String(formData.get('orderId') ?? '');
-  const orderStatus = formData.get('orderStatus');
-  const paymentStatus = formData.get('paymentStatus');
+  try {
+    const orderId = String(formData.get('orderId') ?? '');
+    const orderStatus = formData.get('orderStatus');
+    const paymentStatus = formData.get('paymentStatus');
 
-  if (!orderId) return;
+    if (!orderId) return;
 
-  const payload: { order_status?: string; payment_status?: string } = {};
-  if (typeof orderStatus === 'string' && orderStatus) payload.order_status = orderStatus;
-  if (typeof paymentStatus === 'string' && paymentStatus) payload.payment_status = paymentStatus;
+    const payload: { order_status?: string; payment_status?: string } = {};
+    if (typeof orderStatus === 'string' && orderStatus) payload.order_status = orderStatus;
+    if (typeof paymentStatus === 'string' && paymentStatus) payload.payment_status = paymentStatus;
 
-  if (!Object.keys(payload).length) return;
+    if (!Object.keys(payload).length) return;
 
-  const supabase = createServerClient();
-  await supabase.from('orders').update(payload).eq('id', orderId);
+    const supabase = createServerClient();
+    await supabase.from('orders').update(payload).eq('id', orderId);
 
-  revalidatePath('/admin');
-  revalidatePath('/admin/orders');
-  revalidatePath(`/admin/orders/${orderId}`);
-  revalidatePath(`/admin/orders/${orderId}/print`);
+    revalidatePath('/admin');
+    revalidatePath('/admin/orders');
+    revalidatePath(`/admin/orders/${orderId}`);
+    revalidatePath(`/admin/orders/${orderId}/print`);
+  } catch (error) {
+    console.error('Failed to quick update order state', error);
+  }
 }
 
-export async function upsertMenuItem(formData: FormData) {
-  const supabase = createServerClient();
-  const id = String(formData.get('id') ?? '');
-  const name = String(formData.get('name') ?? '');
-  const imageUrlInput = String(formData.get('image_url') ?? '').trim();
-  const imageFile = formData.get('image_file');
-  let imageUrl = imageUrlInput;
+function isMissingBucketError(message: string) {
+  const normalized = message.toLowerCase();
+  return normalized.includes('bucket not found') || normalized.includes('bucket does not exist');
+}
 
-  if (imageFile instanceof File && imageFile.size > 0) {
-    const extension = imageFile.name.split('.').pop()?.toLowerCase() || 'jpg';
-    const filePath = `menu-items/${id || slugify(name) || 'item'}-${crypto.randomUUID()}.${extension}`;
-    const { error: uploadError } = await supabase.storage
-      .from('menu-images')
-      .upload(filePath, imageFile, {
-        cacheControl: '3600',
-        upsert: true,
-        contentType: imageFile.type || 'image/jpeg',
-      });
+export async function upsertMenuItem(
+  _previousState: UpsertMenuItemState,
+  formData: FormData,
+): Promise<UpsertMenuItemState> {
+  try {
+    const supabase = createServerClient();
+    const id = String(formData.get('id') ?? '');
+    const name = String(formData.get('name') ?? '');
+    const imageUrlInput = String(formData.get('image_url') ?? '').trim();
+    const imageFile = formData.get('image_file');
+    let imageUrl = imageUrlInput;
 
-    if (uploadError) {
-      throw new Error(`Image upload failed: ${uploadError.message}`);
+    if (imageFile instanceof File && imageFile.size > 0) {
+      const extension = imageFile.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const filePath = `menu-items/${id || slugify(name) || 'item'}-${crypto.randomUUID()}.${extension}`;
+      const { error: uploadError } = await supabase.storage
+        .from(MENU_IMAGES_BUCKET)
+        .upload(filePath, imageFile, {
+          cacheControl: '3600',
+          upsert: true,
+          contentType: imageFile.type || 'image/jpeg',
+        });
+
+      if (uploadError) {
+        if (isMissingBucketError(uploadError.message)) {
+          return {
+            success: false,
+            message: getMenuBucketMissingMessage(),
+          };
+        }
+
+        return {
+          success: false,
+          message: `Image upload failed: ${uploadError.message}`,
+        };
+      }
+
+      const { data: publicData } = supabase.storage.from(MENU_IMAGES_BUCKET).getPublicUrl(filePath);
+      imageUrl = publicData.publicUrl;
     }
 
-    const { data: publicData } = supabase.storage.from('menu-images').getPublicUrl(filePath);
-    imageUrl = publicData.publicUrl;
+    const payload = {
+      id: id || undefined,
+      restaurant_id: String(formData.get('restaurant_id')),
+      category_id: String(formData.get('category_id')),
+      name,
+      slug: slugify(name),
+      description: String(formData.get('description') ?? ''),
+      price: Number(formData.get('price') ?? 0),
+      image_url: imageUrl,
+      active: formData.get('active') === 'on',
+      featured: formData.get('featured') === 'on',
+      bestseller: formData.get('bestseller') === 'on',
+    };
+
+    const { error } = await supabase.from('menu_items').upsert(payload);
+    if (error) {
+      return {
+        success: false,
+        message: `Could not save menu item: ${error.message}`,
+      };
+    }
+
+    revalidatePath('/menu');
+    revalidatePath('/admin/menu');
+
+    return {
+      success: true,
+      message: id ? 'Menu item updated.' : 'Menu item created.',
+    };
+  } catch (error) {
+    console.error('Unexpected menu item upsert error', error);
+    return {
+      ...defaultUpsertMenuItemState,
+      message: 'Unexpected error while saving this menu item. Please try again.',
+    };
   }
-
-  const payload = {
-    id: id || undefined,
-    restaurant_id: String(formData.get('restaurant_id')),
-    category_id: String(formData.get('category_id')),
-    name,
-    slug: slugify(name),
-    description: String(formData.get('description') ?? ''),
-    price: Number(formData.get('price') ?? 0),
-    image_url: imageUrl,
-    active: formData.get('active') === 'on',
-    featured: formData.get('featured') === 'on',
-    bestseller: formData.get('bestseller') === 'on',
-  };
-
-  await supabase.from('menu_items').upsert(payload);
-  revalidatePath('/menu');
-  revalidatePath('/admin/menu');
 }
 
 export async function deleteMenuItem(formData: FormData) {
-  const supabase = createServerClient();
-  const id = String(formData.get('id') ?? '');
+  try {
+    const supabase = createServerClient();
+    const id = String(formData.get('id') ?? '');
 
-  if (!id) return;
+    if (!id) return;
 
-  await supabase.from('menu_items').delete().eq('id', id);
-  revalidatePath('/menu');
-  revalidatePath('/admin/menu');
+    await supabase.from('menu_items').delete().eq('id', id);
+    revalidatePath('/menu');
+    revalidatePath('/admin/menu');
+  } catch (error) {
+    console.error('Failed to delete menu item', error);
+  }
 }
 
 export async function upsertCategory(formData: FormData) {
-  const supabase = createServerClient();
-  const name = String(formData.get('name') ?? '');
-  const payload = {
-    id: String(formData.get('id') ?? '') || undefined,
-    restaurant_id: String(formData.get('restaurant_id')),
-    name,
-    slug: slugify(name),
-    active: formData.get('active') === 'on',
-  };
-  await supabase.from('categories').upsert(payload);
-  revalidatePath('/menu');
-  revalidatePath('/admin/categories');
-  revalidatePath('/admin/menu');
+  try {
+    const supabase = createServerClient();
+    const name = String(formData.get('name') ?? '');
+    const payload = {
+      id: String(formData.get('id') ?? '') || undefined,
+      restaurant_id: String(formData.get('restaurant_id')),
+      name,
+      slug: slugify(name),
+      active: formData.get('active') === 'on',
+    };
+    await supabase.from('categories').upsert(payload);
+    revalidatePath('/menu');
+    revalidatePath('/admin/categories');
+    revalidatePath('/admin/menu');
+  } catch (error) {
+    console.error('Failed to upsert category', error);
+  }
 }
 
 export async function updateRestaurantSettings(

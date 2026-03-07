@@ -1,8 +1,9 @@
+import { cache } from 'react';
 import { createServerClient } from '@/lib/supabase/server';
 import { mockCategories, mockMenuItems, mockRestaurant } from '@/lib/mock-data';
 import { Category, MenuItem, Restaurant } from '@/types';
 
-export async function getRestaurant(): Promise<Restaurant> {
+export const getRestaurant = cache(async (): Promise<Restaurant> => {
   try {
     const supabase = createServerClient();
     const { data } = await supabase.from('restaurants').select('*').eq('slug', 'beirut-express').single();
@@ -10,9 +11,9 @@ export async function getRestaurant(): Promise<Restaurant> {
   } catch {
     return mockRestaurant;
   }
-}
+});
 
-export async function getCategories(): Promise<Category[]> {
+export const getCategories = cache(async (): Promise<Category[]> => {
   try {
     const supabase = createServerClient();
     const { data } = await supabase.from('categories').select('*').eq('active', true).order('sort_order');
@@ -20,9 +21,9 @@ export async function getCategories(): Promise<Category[]> {
   } catch {
     return mockCategories;
   }
-}
+});
 
-export async function getMenuItems(): Promise<MenuItem[]> {
+export const getMenuItems = cache(async (): Promise<MenuItem[]> => {
   try {
     const supabase = createServerClient();
     const { data } = await supabase.from('menu_items').select('*').eq('active', true).order('sort_order');
@@ -30,4 +31,4 @@ export async function getMenuItems(): Promise<MenuItem[]> {
   } catch {
     return mockMenuItems;
   }
-}
+});
