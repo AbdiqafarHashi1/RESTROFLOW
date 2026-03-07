@@ -7,13 +7,16 @@ export const mockRestaurant: Restaurant = {
   description: 'Fresh Indo-Arab fast casual favourites delivered quick across Nairobi.',
   phone: '+254700000001',
   whatsapp_number: '254700000001',
+  payment_number: '254711223344',
   address: 'BBS Mall, Nairobi',
   service_area: 'Nairobi CBD, South B, South C, Kilimani, Ngara',
   currency: 'KES',
   delivery_fee: 150,
   opening_hours: 'Mon-Sun · 10:00 AM - 11:00 PM',
   is_open: true,
-  hero_image_url: '/images/hero-food.svg'
+  hero_image_url: '/images/hero-food.svg',
+  hero_title: 'Fresh Beirut Flavors',
+  hero_subtitle: 'Fast delivery and pickup across Nairobi'
 };
 
 export const mockCategories: Category[] = [

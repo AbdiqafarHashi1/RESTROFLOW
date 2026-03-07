@@ -1,5 +1,6 @@
 export type OrderType = 'delivery' | 'pickup';
-export type PaymentMethod = 'cash_on_delivery' | 'pay_on_pickup';
+export type PaymentMethod = 'cash_on_delivery' | 'pay_on_pickup' | 'send_money';
+export type PaymentStatus = 'not_required' | 'pending' | 'confirmed' | 'failed';
 export type OrderStatus = 'new' | 'confirmed' | 'preparing' | 'out_for_delivery' | 'delivered' | 'cancelled';
 
 export interface Restaurant {
@@ -11,12 +12,15 @@ export interface Restaurant {
   hero_image_url?: string;
   phone?: string;
   whatsapp_number?: string;
+  payment_number?: string;
   address?: string;
   service_area?: string;
   currency: string;
   delivery_fee: number;
   opening_hours?: string;
   is_open: boolean;
+  hero_title?: string;
+  hero_subtitle?: string;
 }
 
 export interface Category {

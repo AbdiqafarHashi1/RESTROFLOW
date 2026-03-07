@@ -1,5 +1,5 @@
-insert into restaurants (id, name, slug, description, phone, whatsapp_number, address, service_area, currency, delivery_fee, opening_hours, is_open)
-values ('11111111-1111-1111-1111-111111111111', 'Beirut Restaurant', 'beirut-express', 'Premium Indo-Arab fast casual delivery.', '+254700000001', '254700000001', 'BBS Mall, Nairobi', 'Nairobi CBD, South B, South C, Kilimani, Ngara', 'KES', 150, 'Mon-Sun 10:00 AM - 11:00 PM', true)
+insert into restaurants (id, name, slug, description, phone, whatsapp_number, payment_number, address, service_area, currency, delivery_fee, opening_hours, is_open, hero_title, hero_subtitle)
+values ('11111111-1111-1111-1111-111111111111', 'Beirut Restaurant', 'beirut-express', 'Premium Indo-Arab fast casual delivery.', '+254700000001', '254700000001', '254711223344', 'BBS Mall, Nairobi', 'Nairobi CBD, South B, South C, Kilimani, Ngara', 'KES', 150, 'Mon-Sun 10:00 AM - 11:00 PM', true, 'Fresh Beirut Flavors', 'Fast delivery and pickup across Nairobi')
 on conflict (slug) do nothing;
 
 insert into categories (restaurant_id, name, slug, sort_order, active)
