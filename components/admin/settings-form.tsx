@@ -1,11 +1,8 @@
 'use client';
 
-import { useActionState } from 'react';
-import { useFormStatus } from 'react-dom';
-import {
-  defaultUpdateRestaurantSettingsState,
-  updateRestaurantSettings,
-} from '@/actions/admin';
+import { useFormState, useFormStatus } from 'react-dom';
+import { defaultUpdateRestaurantSettingsState } from '@/lib/admin-settings';
+import { updateRestaurantSettings } from '@/actions/admin';
 import { Restaurant } from '@/types';
 
 function SaveSettingsButton() {
@@ -19,7 +16,7 @@ function SaveSettingsButton() {
 }
 
 export function SettingsForm({ settings }: { settings: Restaurant }) {
-  const [state, formAction] = useActionState(updateRestaurantSettings, defaultUpdateRestaurantSettingsState);
+  const [state, formAction] = useFormState(updateRestaurantSettings, defaultUpdateRestaurantSettingsState);
 
   return (
     <form action={formAction} className="mt-4 rounded-xl border border-border bg-card p-4">
