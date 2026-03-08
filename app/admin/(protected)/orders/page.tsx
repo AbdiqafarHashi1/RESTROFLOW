@@ -15,13 +15,14 @@ type OrderRow = {
   created_at: string;
   area?: string | null;
   address?: string | null;
+  customer_marked_paid?: boolean;
 };
 
 export default async function AdminOrdersPage() {
   const supabase = createServerClient();
   const { data: orders } = await supabase
     .from('orders')
-    .select('id,order_number,customer_name,customer_phone,order_type,payment_method,payment_status,order_status,total,created_at,area,address')
+    .select('id,order_number,customer_name,customer_phone,order_type,payment_method,payment_status,order_status,total,created_at,area,address,customer_marked_paid')
     .order('created_at', { ascending: false })
     .limit(100);
 
