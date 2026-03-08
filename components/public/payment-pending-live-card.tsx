@@ -16,12 +16,20 @@ type PendingOrderState = {
 
 const POLL_INTERVAL_MS = 5000;
 
-function getStateCopy(order: PendingOrderState) {
+type StateCopy = {
+  label: string;
+  title: string;
+  description: string;
+  tone: 'pending' | 'success' | 'active' | 'muted';
+};
+
+function getStateCopy(order: PendingOrderState): StateCopy {
   if (order.order_status === 'cancelled') {
     return {
       label: 'Cancelled',
       title: 'Order cancelled',
       description: 'Please contact the restaurant if you need help.',
+      tone: 'muted',
     };
   }
 
@@ -31,22 +39,25 @@ function getStateCopy(order: PendingOrderState) {
         label: 'Payment Notification Sent',
         title: 'Waiting for restaurant confirmation',
         description: 'We have notified the restaurant to verify your payment.',
+        tone: 'pending',
       };
     }
 
     return {
       label: 'Payment Pending',
       title: 'Payment Pending',
-      description: 'We are waiting for your payment.',
+      description: 'Please complete your transfer to continue with order confirmation.',
+      tone: 'pending',
     };
   }
 
   if (order.payment_status === 'confirmed') {
     if (order.order_status === 'preparing') {
       return {
-        label: 'Preparing Your Order',
+        label: 'Preparing',
         title: 'Preparing your order',
         description: 'Our kitchen is preparing your order.',
+        tone: 'active',
       };
     }
 
@@ -55,6 +66,7 @@ function getStateCopy(order: PendingOrderState) {
         label: 'Out for Delivery',
         title: 'Out for delivery',
         description: 'Your order is on the way.',
+        tone: 'active',
       };
     }
 
@@ -63,6 +75,7 @@ function getStateCopy(order: PendingOrderState) {
         label: 'Delivered',
         title: 'Delivered',
         description: 'Enjoy your meal.',
+        tone: 'success',
       };
     }
 
@@ -70,6 +83,7 @@ function getStateCopy(order: PendingOrderState) {
       label: 'Payment Received',
       title: 'Order Confirmed',
       description: 'Your payment has been confirmed. Preparing your order.',
+      tone: 'success',
     };
   }
 
@@ -77,6 +91,43 @@ function getStateCopy(order: PendingOrderState) {
     label: 'Payment Pending',
     title: 'Payment Pending',
     description: 'We are waiting for your payment.',
+    tone: 'pending',
+  };
+}
+
+function getToneClasses(tone: StateCopy['tone']) {
+  if (tone === 'success') {
+    return {
+      label: 'text-emerald-300',
+      panel: 'border-emerald-400/45 bg-emerald-500/10',
+      title: 'text-emerald-200',
+      chip: 'border-emerald-400/35 bg-emerald-500/15 text-emerald-200',
+    };
+  }
+
+  if (tone === 'active') {
+    return {
+      label: 'text-sky-300',
+      panel: 'border-sky-400/40 bg-sky-500/10',
+      title: 'text-sky-200',
+      chip: 'border-sky-400/30 bg-sky-500/15 text-sky-200',
+    };
+  }
+
+  if (tone === 'muted') {
+    return {
+      label: 'text-zinc-300',
+      panel: 'border-zinc-500/50 bg-zinc-600/10',
+      title: 'text-zinc-200',
+      chip: 'border-zinc-400/35 bg-zinc-700/20 text-zinc-200',
+    };
+  }
+
+  return {
+    label: 'text-amber-300',
+    panel: 'border-amber-300/45 bg-amber-500/10',
+    title: 'text-amber-200',
+    chip: 'border-amber-300/35 bg-amber-500/15 text-amber-200',
   };
 }
 
@@ -125,19 +176,32 @@ export function PaymentPendingLiveCard({
   }, [loadOrderState]);
 
   const stateCopy = useMemo(() => getStateCopy(orderState), [orderState]);
+  const tone = getToneClasses(stateCopy.tone);
   const canMarkPaid = orderState.payment_method === 'send_money' && orderState.payment_status === 'pending' && !orderState.customer_marked_paid;
+  const showPaymentInstructions = orderState.payment_method === 'send_money' && orderState.payment_status === 'pending';
 
   return (
     <>
-      <p className="text-center text-xs font-semibold uppercase tracking-[0.2em] text-amber-300">{stateCopy.label}</p>
+      <p className={`text-center text-xs font-semibold uppercase tracking-[0.2em] ${tone.label}`}>{stateCopy.label}</p>
       <h1 className="mt-3 text-center font-heading text-3xl">Order #{orderNumber}</h1>
       <p className="mt-2 text-center text-muted">{stateCopy.description}</p>
 
-      <div className="mt-5 rounded-2xl border border-amber-300/40 bg-card p-4 md:mt-6 md:p-5">
-        <p className="text-center text-lg font-semibold text-amber-300">{stateCopy.title}</p>
+      <div className={`mt-5 rounded-2xl border p-4 md:mt-6 md:p-5 ${tone.panel}`}>
+        <div className="flex items-center justify-between gap-3">
+          <p className={`text-lg font-semibold ${tone.title}`}>{stateCopy.title}</p>
+          <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.15em] ${tone.chip}`}>{stateCopy.label}</span>
+        </div>
+
         <p className="mt-4 flex justify-between text-sm text-muted"><span>Total Amount</span><span className="text-white">KES {total || '-'}</span></p>
-        <p className="mt-2 flex justify-between text-sm text-muted"><span>Send Money Number</span><span className="text-white">{paymentNumber || '-'}</span></p>
-        <p className="mt-2 text-sm text-muted">Please send the exact amount and include order number <span className="text-white">{orderNumber}</span> in your transfer message.</p>
+
+        {showPaymentInstructions ? (
+          <>
+            <p className="mt-2 flex justify-between text-sm text-muted"><span>Send Money Number</span><span className="text-white">{paymentNumber || '-'}</span></p>
+            <p className="mt-2 text-sm text-muted">Please send the exact amount and include order number <span className="text-white">{orderNumber}</span> in your transfer message.</p>
+          </>
+        ) : (
+          <p className="mt-2 text-sm text-muted">Payment received successfully. We are now progressing your order through preparation and delivery.</p>
+        )}
       </div>
 
       <div className="mt-3 rounded-2xl border border-border bg-card p-4 text-sm md:mt-4 md:p-5">

@@ -52,7 +52,7 @@ export function OrderQuickActions({
         </form>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+      <div className="grid grid-cols-2 gap-2 lg:grid-cols-3">
         {QUICK_ACTIONS.map((action) => {
           const disabled = isDisabled(action, orderStatus);
           const active = isActive(action, orderStatus);
