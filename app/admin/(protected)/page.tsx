@@ -17,6 +17,7 @@ type OrderRow = {
   created_at: string;
   area?: string | null;
   address?: string | null;
+  customer_marked_paid?: boolean;
 };
 
 function OrdersSection({ title, description, orders }: { title: string; description: string; orders: OrderRow[] }) {
@@ -60,7 +61,7 @@ export default async function AdminDashboardPage() {
     supabase.from('orders').select('id', { count: 'exact', head: true }).eq('order_status', 'delivered').gte('created_at', startOfDay.toISOString()),
     supabase
       .from('orders')
-      .select('id,order_number,customer_name,customer_phone,order_type,payment_method,payment_status,order_status,total,created_at,area,address')
+      .select('id,order_number,customer_name,customer_phone,order_type,payment_method,payment_status,order_status,total,created_at,area,address,customer_marked_paid')
       .order('created_at', { ascending: false })
       .limit(80),
   ]);
@@ -69,6 +70,9 @@ export default async function AdminDashboardPage() {
   const orders = (latestOrders ?? []) as OrderRow[];
 
   const pendingPaymentOrders = orders.filter((order) => order.payment_status === 'pending' && order.order_status !== 'cancelled').slice(0, 10);
+  const paymentReviewOrders = orders
+    .filter((order) => order.payment_method === 'send_money' && order.payment_status === 'pending' && order.customer_marked_paid)
+    .slice(0, 10);
   const activeOrders = orders.filter((order) => ['new', 'confirmed', 'preparing', 'out_for_delivery'].includes(order.order_status)).slice(0, 12);
   const recentCompletedOrders = orders.filter((order) => order.order_status === 'delivered').slice(0, 8);
 
@@ -79,14 +83,21 @@ export default async function AdminDashboardPage() {
         <p className="text-sm text-muted">Live order monitoring and service execution for Beirut Express.</p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-7">
         <StatsCard title="Orders Today" value={String(ordersToday ?? 0)} accent />
         <StatsCard title="Revenue Today" value={formatCurrency(revenueToday)} />
         <StatsCard title="Pending Payments" value={String(pendingPayments ?? 0)} />
+        <StatsCard title="Awaiting Payment Review" value={String(paymentReviewOrders.length)} />
         <StatsCard title="Preparing Orders" value={String(preparingOrders ?? 0)} />
         <StatsCard title="Out for Delivery" value={String(outForDelivery ?? 0)} />
         <StatsCard title="Delivered Today" value={String(deliveredToday ?? 0)} />
       </div>
+
+      <OrdersSection
+        title="Payment Review Needed"
+        description={'Send money orders where customers clicked "I Have Paid" and are waiting for verification.'}
+        orders={paymentReviewOrders}
+      />
 
       <OrdersSection
         title="Priority Queue"

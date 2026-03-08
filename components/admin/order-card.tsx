@@ -17,6 +17,7 @@ type OrderCardOrder = {
   order_status: OrderStatus;
   total: number;
   created_at: string;
+  customer_marked_paid?: boolean;
   area?: string | null;
   address?: string | null;
   notes?: string | null;
@@ -26,6 +27,10 @@ type OrderCardOrder = {
 function getUrgencyClasses(order: OrderCardOrder) {
   if (order.order_status === 'delivered') {
     return 'border-border/70 bg-card/60 opacity-80';
+  }
+
+  if (order.payment_method === 'send_money' && order.payment_status === 'pending' && order.customer_marked_paid) {
+    return 'border-blue-400/40 bg-blue-500/10 shadow-[0_0_0_1px_rgba(96,165,250,0.24)]';
   }
 
   if (order.order_status === 'new' && order.payment_status === 'pending') {
@@ -93,6 +98,9 @@ export function OrderCard({ order, showActions = true }: { order: OrderCardOrder
           <div className="flex flex-wrap gap-2">
             <PaymentStatusBadge status={order.payment_status} />
             <OrderStatusBadge status={order.order_status} />
+            {order.payment_method === 'send_money' && order.payment_status === 'pending' && order.customer_marked_paid ? (
+              <span className="rounded-full border border-blue-400/35 bg-blue-500/15 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-blue-200">Customer says paid</span>
+            ) : null}
           </div>
 
           {showActions ? (
