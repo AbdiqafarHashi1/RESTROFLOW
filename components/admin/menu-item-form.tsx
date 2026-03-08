@@ -45,11 +45,21 @@ export function MenuItemForm({
   const isNew = !item;
 
   return (
-    <form action={formAction} encType="multipart/form-data" className="rounded-xl border border-border bg-card p-4">
-      {isNew ? <p className="font-medium">Add Menu Item</p> : null}
+    <form action={formAction} encType="multipart/form-data" className="rounded-2xl border border-border bg-card p-5 shadow-[0_8px_24px_rgba(0,0,0,0.2)]">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">{isNew ? 'Create Item' : 'Menu Item'}</p>
+          <p className="mt-1 text-lg font-semibold">{item?.name ?? 'Add New Menu Item'}</p>
+        </div>
+        <div className="h-14 w-14 overflow-hidden rounded-lg border border-border bg-surface">
+          {item?.image_url ? <div className="h-full w-full bg-cover bg-center" style={{ backgroundImage: `url(${item.image_url})` }} aria-label={item.name} /> : <div className="flex h-full items-center justify-center text-[10px] text-muted">No image</div>}
+        </div>
+      </div>
+
       <input type="hidden" name="id" defaultValue={item?.id ?? ''} />
       <input type="hidden" name="restaurant_id" value={restaurantId} />
-      <div className="mt-3 grid gap-2 md:grid-cols-2">
+
+      <div className="mt-4 grid gap-3 md:grid-cols-2">
         <input name="name" className="input" placeholder="Name" defaultValue={item?.name ?? ''} required />
         <input
           name="price"
@@ -71,20 +81,20 @@ export function MenuItemForm({
 
       <input
         name="image_url"
-        className="input mt-2"
+        className="input mt-3"
         defaultValue={item?.image_url ?? ''}
         placeholder="Image URL (fallback)"
       />
       <textarea
         name="description"
-        className="input mt-2"
+        className="input mt-3"
         defaultValue={item?.description ?? ''}
         placeholder="Description"
       />
-      <div className="mt-2 flex flex-wrap gap-3 text-sm">
-        <label><input type="checkbox" name="active" defaultChecked={item?.active ?? true} /> Active</label>
-        <label><input type="checkbox" name="featured" defaultChecked={item?.featured ?? false} /> Featured</label>
-        <label><input type="checkbox" name="bestseller" defaultChecked={item?.bestseller ?? false} /> Bestseller</label>
+      <div className="mt-3 flex flex-wrap gap-4 text-sm">
+        <label className="inline-flex items-center gap-2"><input type="checkbox" name="active" defaultChecked={item?.active ?? true} /> Active</label>
+        <label className="inline-flex items-center gap-2"><input type="checkbox" name="featured" defaultChecked={item?.featured ?? false} /> Featured</label>
+        <label className="inline-flex items-center gap-2"><input type="checkbox" name="bestseller" defaultChecked={item?.bestseller ?? false} /> Bestseller</label>
       </div>
 
       {state.message ? (
@@ -93,7 +103,7 @@ export function MenuItemForm({
         </p>
       ) : null}
 
-      <div className="mt-3 flex flex-wrap items-center gap-2">
+      <div className="mt-4 flex flex-wrap items-center gap-2">
         <SaveButton isNew={isNew} />
         {item ? <DeleteMenuItemButton formAction={deleteMenuItem} itemName={item.name} /> : null}
       </div>

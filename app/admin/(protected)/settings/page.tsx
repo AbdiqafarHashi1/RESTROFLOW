@@ -11,6 +11,7 @@ export default async function AdminSettingsPage() {
   return (
     <div>
       <h1 className="section-title">Settings</h1>
+      <p className="mt-1 text-sm text-muted">Structured configuration for brand, operations, delivery, and payment profile.</p>
       <SettingsForm settings={settings as Restaurant} />
     </div>
   );
