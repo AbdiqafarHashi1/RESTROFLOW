@@ -23,18 +23,20 @@ type OrderRow = {
 function OrdersSection({ title, description, orders }: { title: string; description: string; orders: OrderRow[] }) {
   return (
     <section className="rounded-2xl border border-border bg-surface/60 p-4 shadow-[0_8px_24px_rgba(0,0,0,0.2)] md:p-5">
-      <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-4 space-y-1">
         <h2 className="text-lg font-semibold">{title}</h2>
         <p className="text-xs text-muted">{description}</p>
       </div>
 
-      <div className="space-y-3">
-        {orders.map((order) => (
-          <OrderCard key={order.id} order={order} />
-        ))}
-      </div>
-
-      {!orders.length && <p className="text-sm text-muted">No orders in this queue.</p>}
+      {orders.length ? (
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          {orders.map((order) => (
+            <OrderCard key={order.id} order={order} />
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-muted">No orders in this queue.</p>
+      )}
     </section>
   );
 }
@@ -63,24 +65,31 @@ export default async function AdminDashboardPage() {
       .from('orders')
       .select('id,order_number,customer_name,customer_phone,order_type,payment_method,payment_status,order_status,total,created_at,area,address,customer_marked_paid')
       .order('created_at', { ascending: false })
-      .limit(80),
+      .limit(120),
   ]);
 
-  const revenueToday = (ordersTodayRows?.reduce((sum, row) => sum + Number(row.total ?? 0), 0) ?? 0);
+  const revenueToday = ordersTodayRows?.reduce((sum, row) => sum + Number(row.total ?? 0), 0) ?? 0;
   const orders = (latestOrders ?? []) as OrderRow[];
 
-  const pendingPaymentOrders = orders.filter((order) => order.payment_status === 'pending' && order.order_status !== 'cancelled').slice(0, 10);
-  const paymentReviewOrders = orders
-    .filter((order) => order.payment_method === 'send_money' && order.payment_status === 'pending' && order.customer_marked_paid)
-    .slice(0, 10);
-  const activeOrders = orders.filter((order) => ['new', 'confirmed', 'preparing', 'out_for_delivery'].includes(order.order_status)).slice(0, 12);
-  const recentCompletedOrders = orders.filter((order) => order.order_status === 'delivered').slice(0, 8);
+  const paymentReviewOrders = orders.filter(
+    (order) => order.payment_method === 'send_money' && order.payment_status === 'pending' && order.customer_marked_paid,
+  );
+  const priorityOrders = orders.filter(
+    (order) =>
+      (order.order_status === 'new' && order.payment_status === 'pending') ||
+      (order.payment_method === 'send_money' && order.payment_status === 'pending' && order.customer_marked_paid),
+  );
+  const sendMoneyOrders = orders.filter((order) => order.payment_method === 'send_money').slice(0, 16);
+  const codOrders = orders.filter((order) => order.payment_method === 'cash_on_delivery').slice(0, 16);
+  const pickupOrders = orders.filter((order) => order.order_type === 'pickup').slice(0, 16);
+  const activeOrders = orders.filter((order) => ['preparing', 'out_for_delivery'].includes(order.order_status)).slice(0, 16);
+  const recentCompletedOrders = orders.filter((order) => order.order_status === 'delivered').slice(0, 12);
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-[1800px] space-y-6">
       <div className="space-y-1">
         <h1 className="section-title">Operations Control Center</h1>
-        <p className="text-sm text-muted">Live order monitoring and service execution for Beirut Express.</p>
+        <p className="text-sm text-muted">Compact multi-column order board built from the mobile card pattern for faster desktop operations.</p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-7">
@@ -100,22 +109,20 @@ export default async function AdminDashboardPage() {
       />
 
       <OrdersSection
-        title="Priority Queue"
-        description="Unpaid or newly placed orders that require immediate staff attention."
-        orders={pendingPaymentOrders}
+        title="Urgent / Priority Orders"
+        description="New unpaid orders and urgent payment-check requests that need immediate staff action."
+        orders={priorityOrders}
       />
 
-      <OrdersSection
-        title="Active Service Flow"
-        description="Orders currently being confirmed, prepared, or dispatched."
-        orders={activeOrders}
-      />
+      <OrdersSection title="Send Money Orders" description="Transfer-based flow separated for clear payment verification and confirmation." orders={sendMoneyOrders} />
 
-      <OrdersSection
-        title="Delivered Recently"
-        description="Completed orders for quick review and customer follow-up."
-        orders={recentCompletedOrders}
-      />
+      <OrdersSection title="Cash on Delivery Orders" description="COD queue separated for dispatch and handoff operations." orders={codOrders} />
+
+      <OrdersSection title="Pickup Orders" description="Pickup flow grouped for counter preparation and completion." orders={pickupOrders} />
+
+      <OrdersSection title="Preparing / Out for Delivery" description="Live active fulfilment states currently in progress." orders={activeOrders} />
+
+      <OrdersSection title="Delivered Recently" description="Completed orders kept visible for short-term operational review." orders={recentCompletedOrders} />
     </div>
   );
 }
