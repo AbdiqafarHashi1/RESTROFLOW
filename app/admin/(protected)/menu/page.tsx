@@ -16,14 +16,16 @@ export default async function AdminMenuPage() {
   if (!restaurant) return <p className="text-muted">Restaurant not found.</p>;
 
   return (
-    <div>
-      <h1 className="section-title">Menu</h1>
-
-      <div className="mt-4">
-        <MenuItemForm categories={categories ?? []} restaurantId={restaurant.id} />
+    <div className="space-y-5">
+      <div>
+        <h1 className="section-title">Menu Management</h1>
+        <p className="mt-1 text-sm text-muted">Maintain menu items with consistent media, pricing, and visibility controls.</p>
       </div>
 
-      <div className="mt-4 space-y-3">
+      <MenuItemForm categories={categories ?? []} restaurantId={restaurant.id} />
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold">Existing Items</h2>
         {(menuItems ?? []).map((item) => (
           <MenuItemForm
             key={item.id}
@@ -35,7 +37,7 @@ export default async function AdminMenuPage() {
             }}
           />
         ))}
-      </div>
+      </section>
     </div>
   );
 }
