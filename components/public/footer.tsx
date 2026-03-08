@@ -33,7 +33,7 @@ export function SiteFooter({ restaurant }: { restaurant: Restaurant }) {
       </div>
       <div className="border-t border-border py-4 text-center text-xs text-muted">
         <p>© {new Date().getFullYear()} {restaurant.name}. All rights reserved.</p>
-        <Link href="/admin/login" className="mt-1 inline-block text-[11px] text-muted/70 hover:text-muted">Admin access</Link>
+        <Link href="/admin/login" className="mt-1 inline-block text-[11px] text-muted/70 hover:text-muted">Admin Login</Link>
       </div>
     </footer>
   );
