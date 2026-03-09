@@ -58,17 +58,26 @@ export function HomeOrdering({ restaurant, categories, items }: { restaurant: Re
         </div>
       </section>
 
-      <section id="menu-section" className="container-padding mx-auto max-w-6xl py-10">
+      <section id="menu-section" className="container-padding mx-auto max-w-7xl py-10">
         <div className="flex items-end justify-between gap-3">
           <div>
             <h2 className="section-title">Order Menu</h2>
-            <p className="mt-2 text-sm text-muted">Quick add from home, or open full menu for focused browsing.</p>
+            <p className="mt-2 text-sm text-muted md:text-base">Quick add from home, or open full menu for focused browsing.</p>
           </div>
           <Link href="/menu" className="text-sm text-primary">View full menu →</Link>
         </div>
-        <input className="input my-4" placeholder="Search kebab wrap, shawarma, tea..." value={query} onChange={(e) => setQuery(e.target.value)} />
-        <CategoryChips categories={categories} active={active} onChange={setActive} />
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="sticky top-[72px] z-20 -mx-4 mt-5 border-y border-border/70 bg-background/90 px-4 py-3 backdrop-blur md:top-[84px]">
+          <input
+            className="input h-12 rounded-2xl border-border/80 bg-card/95 text-sm md:text-base"
+            placeholder="Search kebab wraps, shawarma, sides..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          <div className="mt-3">
+            <CategoryChips categories={categories} active={active} onChange={setActive} />
+          </div>
+        </div>
+        <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {filtered.length ? filtered.slice(0, 9).map((item) => <MenuItemCard key={item.id} item={item} onAdd={addItem} />) : (
             <div className="rounded-xl border border-border bg-card p-5 text-sm text-muted">No menu items found for this filter. Try another category.</div>
           )}
