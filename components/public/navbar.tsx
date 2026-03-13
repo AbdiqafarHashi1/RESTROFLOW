@@ -11,10 +11,11 @@ export function Navbar({ restaurantName = 'Beirut Express' }: { restaurantName?:
   const { isAuthenticated } = useAuthProfile();
   const router = useRouter();
   const pathname = usePathname();
-  const cartCount = items.reduce((sum, item) => sum + item.quantity, 0);
+  const safeItems = Array.isArray(items) ? items : [];
+  const cartCount = safeItems.reduce((sum, item) => sum + (item?.quantity ?? 0), 0);
 
   function handleOrderNow() {
-    if (items.length > 0) {
+    if (safeItems.length > 0) {
       router.push('/checkout');
       return;
     }
