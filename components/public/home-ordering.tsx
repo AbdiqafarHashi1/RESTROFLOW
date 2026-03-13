@@ -29,9 +29,14 @@ export function HomeOrdering({ restaurant, categories, items }: { restaurant: Re
       <Navbar restaurantName={restaurant.name} />
       <HeroSection restaurant={restaurant} />
 
-      <section id="bestsellers" className="container-padding mx-auto max-w-6xl py-8">
-        <h2 className="section-title">Best Sellers</h2>
-        <p className="mt-2 text-sm text-muted">Most-loved wraps, sides and combos customers reorder every day.</p>
+      <section id="bestsellers" className="container-padding mx-auto max-w-6xl py-6 md:py-8">
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <h2 className="section-title">Best Sellers</h2>
+            <p className="mt-2 text-sm text-muted">Most-loved wraps, sides and combos customers reorder every day.</p>
+          </div>
+          <a href="#menu-section" className="hidden text-sm text-primary md:inline">Browse menu ↓</a>
+        </div>
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {featured.map((item) => (
             <div key={item.id} className="rounded-2xl border border-border bg-card p-4">
@@ -47,18 +52,19 @@ export function HomeOrdering({ restaurant, categories, items }: { restaurant: Re
         </div>
       </section>
 
-      <section className="container-padding mx-auto max-w-6xl py-2">
-        <h2 className="section-title">Category Shortcuts</h2>
-        <div className="mt-4 flex flex-wrap gap-2">
+      <section className="container-padding mx-auto max-w-6xl py-4 md:py-6">
+        <h2 className="section-title text-2xl md:text-3xl">Category Shortcuts</h2>
+        <p className="mt-2 text-sm text-muted">Jump straight to your cravings with one tap.</p>
+        <div className="mt-4 flex flex-wrap gap-2.5">
           {categories.map((category) => (
-            <a key={category.id} href="#menu-section" onClick={() => setActive(category.slug)} className="rounded-full border border-border bg-card px-4 py-2 text-sm text-muted hover:text-white">
+            <a key={category.id} href="#menu-section" onClick={() => setActive(category.slug)} className="rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-muted transition hover:border-primary/50 hover:text-white">
               {category.name}
             </a>
           ))}
         </div>
       </section>
 
-      <section id="menu-section" className="container-padding mx-auto max-w-7xl py-10">
+      <section id="menu-section" className="container-padding mx-auto max-w-7xl py-8 md:py-10">
         <div className="flex items-end justify-between gap-3">
           <div>
             <h2 className="section-title">Order Menu</h2>
@@ -66,7 +72,7 @@ export function HomeOrdering({ restaurant, categories, items }: { restaurant: Re
           </div>
           <Link href="/menu" className="text-sm text-primary">View full menu →</Link>
         </div>
-        <div className="sticky top-[72px] z-20 -mx-4 mt-5 border-y border-border/70 bg-background/90 px-4 py-3 backdrop-blur md:top-[84px]">
+        <div className="sticky top-[72px] z-20 -mx-4 mt-5 rounded-2xl border border-border/70 bg-background/90 px-4 py-3 backdrop-blur md:top-[84px]">
           <input
             className="input h-12 rounded-2xl border-border/80 bg-card/95 text-sm md:text-base"
             placeholder="Search kebab wraps, shawarma, sides..."
