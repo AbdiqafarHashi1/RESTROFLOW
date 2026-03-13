@@ -20,7 +20,11 @@ function emit() {
 
 function saveGuest(items: CartItem[]) {
   if (typeof window === 'undefined') return;
-  window.localStorage.setItem(GUEST_KEY, JSON.stringify(items));
+  try {
+    window.localStorage.setItem(GUEST_KEY, JSON.stringify(items));
+  } catch {
+    // ignore storage errors (private mode/quota)
+  }
 }
 
 function readGuest(): CartItem[] {
@@ -45,11 +49,17 @@ function setStore(next: CartItem[]) {
 async function ensureProfileAndCart(userId: string) {
   const supabase = createBrowserClient();
 
-  const { data: existingProfile } = await supabase
+  const { data: existingProfile, error: profileLookupError } = await supabase
     .from('profiles')
     .select('*')
     .eq('auth_user_id', userId)
     .maybeSingle();
+
+  if (profileLookupError) {
+    currentProfileId = null;
+    currentCartId = null;
+    return;
+  }
 
   if (!existingProfile) {
     const { data: authUser } = await supabase.auth.getUser();
@@ -64,7 +74,11 @@ async function ensureProfileAndCart(userId: string) {
       .select('*')
       .single();
 
-    if (error) throw error;
+    if (error || !insertedProfile) {
+      currentProfileId = null;
+      currentCartId = null;
+      return;
+    }
     currentProfileId = insertedProfile.id;
   } else {
     currentProfileId = existingProfile.id;
@@ -77,12 +91,22 @@ async function ensureProfileAndCart(userId: string) {
       .eq('id', existingProfile.id);
   }
 
-  const { data: cart } = await supabase
+  if (!currentProfileId) {
+    currentCartId = null;
+    return;
+  }
+
+  const { data: cart, error: cartLookupError } = await supabase
     .from('carts')
     .select('id')
     .eq('profile_id', currentProfileId)
     .eq('status', 'active')
     .maybeSingle();
+
+  if (cartLookupError) {
+    currentCartId = null;
+    return;
+  }
 
   if (!cart) {
     const { data: createdCart, error } = await supabase
@@ -91,7 +115,10 @@ async function ensureProfileAndCart(userId: string) {
       .select('id')
       .single();
 
-    if (error) throw error;
+    if (error || !createdCart) {
+      currentCartId = null;
+      return;
+    }
     currentCartId = createdCart.id;
   } else {
     currentCartId = cart.id;
@@ -107,7 +134,9 @@ async function loadRemoteItems() {
     .eq('cart_id', currentCartId)
     .order('created_at', { ascending: true });
 
-  if (error) throw error;
+  if (error) {
+    return;
+  }
 
   store = (data ?? []).map((row: any) => ({
     menu_item_id: row.menu_item_id,
@@ -152,27 +181,52 @@ async function mergeGuestCartIntoRemote() {
   }
 
   if (typeof window !== 'undefined') {
-    window.localStorage.removeItem(GUEST_KEY);
+    try {
+      window.localStorage.removeItem(GUEST_KEY);
+    } catch {
+      // ignore storage errors
+    }
   }
 }
 
 async function bootstrapForAuth() {
-  const supabase = createBrowserClient();
-  const { data } = await supabase.auth.getUser();
-  const user = data.user;
+  try {
+    const supabase = createBrowserClient();
+    const { data, error } = await supabase.auth.getUser();
+    if (error) {
+      currentUserId = null;
+      currentProfileId = null;
+      currentCartId = null;
+      setStore(readGuest());
+      return;
+    }
 
-  if (!user) {
+    const user = data.user;
+
+    if (!user) {
+      currentUserId = null;
+      currentProfileId = null;
+      currentCartId = null;
+      setStore(readGuest());
+      return;
+    }
+
+    currentUserId = user.id;
+    await ensureProfileAndCart(user.id);
+
+    if (!currentCartId) {
+      setStore(readGuest());
+      return;
+    }
+
+    await mergeGuestCartIntoRemote();
+    await loadRemoteItems();
+  } catch {
     currentUserId = null;
     currentProfileId = null;
     currentCartId = null;
     setStore(readGuest());
-    return;
   }
-
-  currentUserId = user.id;
-  await ensureProfileAndCart(user.id);
-  await mergeGuestCartIntoRemote();
-  await loadRemoteItems();
 }
 
 function ensureInitialized() {

@@ -13,31 +13,40 @@ export function useAuthProfile() {
     const supabase = createBrowserClient();
 
     async function load() {
-      const { data } = await supabase.auth.getUser();
-      const user = data.user;
-      if (!user) {
+      try {
+        const { data: authData, error: authError } = await supabase.auth.getUser();
+        if (authError) {
+          setUserId(null);
+          setProfile(null);
+          return;
+        }
+
+        const user = authData.user;
+        if (!user) {
+          setUserId(null);
+          setProfile(null);
+          return;
+        }
+
+        setUserId(user.id);
+        const { data: existing, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('auth_user_id', user.id)
+          .maybeSingle();
+
+        if (profileError) {
+          setProfile(null);
+          return;
+        }
+
+        setProfile((existing as Profile) ?? null);
+      } catch {
         setUserId(null);
         setProfile(null);
+      } finally {
         setLoading(false);
-        return;
       }
-
-      setUserId(user.id);
-      const { data: existing } = await supabase.from('profiles').select('*').eq('auth_user_id', user.id).maybeSingle();
-
-      if (existing) {
-        setProfile(existing as Profile);
-      } else {
-        const { data: created } = await supabase.from('profiles').insert({
-          auth_user_id: user.id,
-          phone: user.phone ?? null,
-          email: user.email ?? null,
-          full_name: (user.user_metadata?.full_name as string | undefined) ?? null,
-        }).select('*').single();
-        setProfile((created as Profile) ?? null);
-      }
-
-      setLoading(false);
     }
 
     load();
