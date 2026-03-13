@@ -1,13 +1,17 @@
 'use client';
 
 import Link from 'next/link';
+import { ShoppingBag, User } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCart } from '@/lib/use-cart';
+import { useAuthProfile } from '@/lib/use-auth-profile';
 
 export function Navbar({ restaurantName = 'Beirut Express' }: { restaurantName?: string }) {
   const { items } = useCart();
+  const { isAuthenticated } = useAuthProfile();
   const router = useRouter();
   const pathname = usePathname();
+  const cartCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
   function handleOrderNow() {
     if (items.length > 0) {
@@ -34,6 +38,13 @@ export function Navbar({ restaurantName = 'Beirut Express' }: { restaurantName?:
           <a href="#how-it-works" className="hover:text-white">How it Works</a>
         </nav>
         <div className="flex items-center gap-2">
+          <Link href="/cart" className="relative rounded-xl border border-border p-2 text-muted hover:text-white" aria-label="Cart">
+            <ShoppingBag size={18} />
+            {cartCount > 0 && <span className="absolute -right-1 -top-1 rounded-full bg-primary px-1.5 text-[10px] font-semibold text-black">{cartCount}</span>}
+          </Link>
+          <Link href={isAuthenticated ? '/account' : '/login'} className="rounded-xl border border-border p-2 text-muted hover:text-white" aria-label="Account">
+            <User size={18} />
+          </Link>
           <button type="button" onClick={handleOrderNow} className="btn-primary py-2 text-sm">Order Now</button>
         </div>
       </div>

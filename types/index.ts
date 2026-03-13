@@ -50,4 +50,14 @@ export interface CartItem {
   item_name: string;
   unit_price: number;
   quantity: number;
+  image_url?: string;
+  notes?: string | null;
+}
+
+export interface Profile {
+  id: string;
+  auth_user_id: string;
+  phone?: string | null;
+  email?: string | null;
+  full_name?: string | null;
 }
