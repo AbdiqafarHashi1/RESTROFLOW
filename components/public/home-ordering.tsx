@@ -12,7 +12,17 @@ import { useCart } from '@/lib/use-cart';
 import { SiteFooter } from '@/components/public/footer';
 import Link from 'next/link';
 
-export function HomeOrdering({ restaurant, categories, items }: { restaurant: Restaurant; categories: Category[]; items: MenuItem[] }) {
+export function HomeOrdering({
+  restaurant,
+  categories,
+  items,
+  currentYear,
+}: {
+  restaurant: Restaurant;
+  categories: Category[];
+  items: MenuItem[];
+  currentYear: number;
+}) {
   const [active, setActive] = useState('all');
   const [query, setQuery] = useState('');
   const { items: cartItems, addItem } = useCart();
@@ -111,7 +121,7 @@ export function HomeOrdering({ restaurant, categories, items }: { restaurant: Re
         </div>
       </section>
 
-      <SiteFooter restaurant={restaurant} />
+      <SiteFooter restaurant={restaurant} currentYear={currentYear} />
       <CartSummary items={cartItems} />
     </div>
   );

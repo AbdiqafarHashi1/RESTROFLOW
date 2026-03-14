@@ -1,7 +1,7 @@
 'use client';
 
 import { useSyncExternalStore } from 'react';
-import { createBrowserClient } from '@/lib/supabase/client';
+import { tryCreateBrowserClient } from '@/lib/supabase/client';
 import { CartItem, MenuItem } from '@/types';
 
 const GUEST_KEY = 'beirut-cart';
@@ -13,8 +13,21 @@ let currentProfileId: string | null = null;
 let currentCartId: string | null = null;
 let authSubscribed = false;
 const listeners = new Set<() => void>();
+let snapshot = { items: store, isLoading, isAuthenticated: false };
+
+function updateSnapshot() {
+  const nextIsAuthenticated = Boolean(currentUserId);
+  if (
+    snapshot.items !== store
+    || snapshot.isLoading !== isLoading
+    || snapshot.isAuthenticated !== nextIsAuthenticated
+  ) {
+    snapshot = { items: store, isLoading, isAuthenticated: nextIsAuthenticated };
+  }
+}
 
 function emit() {
+  updateSnapshot();
   listeners.forEach((listener) => listener());
 }
 
@@ -47,7 +60,12 @@ function setStore(next: CartItem[]) {
 }
 
 async function ensureProfileAndCart(userId: string) {
-  const supabase = createBrowserClient();
+  const supabase = tryCreateBrowserClient();
+  if (!supabase) {
+    currentProfileId = null;
+    currentCartId = null;
+    return;
+  }
 
   const { data: existingProfile, error: profileLookupError } = await supabase
     .from('profiles')
@@ -127,7 +145,8 @@ async function ensureProfileAndCart(userId: string) {
 
 async function loadRemoteItems() {
   if (!currentCartId) return;
-  const supabase = createBrowserClient();
+  const supabase = tryCreateBrowserClient();
+  if (!supabase) return;
   const { data, error } = await supabase
     .from('cart_items')
     .select('menu_item_id, quantity, unit_price_snapshot, title_snapshot, notes, menu_items(image_url)')
@@ -152,7 +171,8 @@ async function loadRemoteItems() {
 async function mergeGuestCartIntoRemote() {
   const guestItems = readGuest();
   if (!guestItems.length || !currentCartId) return;
-  const supabase = createBrowserClient();
+  const supabase = tryCreateBrowserClient();
+  if (!supabase) return;
 
   for (const guestItem of guestItems) {
     const { data: existing } = await supabase
@@ -191,7 +211,15 @@ async function mergeGuestCartIntoRemote() {
 
 async function bootstrapForAuth() {
   try {
-    const supabase = createBrowserClient();
+    const supabase = tryCreateBrowserClient();
+    if (!supabase) {
+      currentUserId = null;
+      currentProfileId = null;
+      currentCartId = null;
+      setStore(readGuest());
+      return;
+    }
+
     const { data, error } = await supabase.auth.getUser();
     if (error) {
       currentUserId = null;
@@ -244,8 +272,13 @@ function ensureInitialized() {
   });
 
   if (!authSubscribed) {
+    const supabase = tryCreateBrowserClient();
+    if (!supabase) {
+      console.warn('[public-shell] Cart auth subscription skipped: Supabase browser client unavailable.');
+      return;
+    }
+
     authSubscribed = true;
-    const supabase = createBrowserClient();
     supabase.auth.onAuthStateChange(() => {
       isLoading = true;
       emit();
@@ -281,12 +314,14 @@ function subscribe(listener: () => void) {
 
 function getSnapshot() {
   ensureInitialized();
-  return { items: store, isLoading, isAuthenticated: Boolean(currentUserId) };
+  updateSnapshot();
+  return snapshot;
 }
 
 async function syncItem(menuItemId: string, quantity: number, fallback?: Partial<CartItem>) {
   if (!currentCartId) return;
-  const supabase = createBrowserClient();
+  const supabase = tryCreateBrowserClient();
+  if (!supabase) return;
   const { data: existing } = await supabase
     .from('cart_items')
     .select('id')
@@ -356,7 +391,8 @@ export function useCart() {
     setStore([]);
 
     if (currentUserId && currentCartId) {
-      const supabase = createBrowserClient();
+      const supabase = tryCreateBrowserClient();
+      if (!supabase) return;
       await supabase.from('cart_items').delete().eq('cart_id', currentCartId);
     }
   }
