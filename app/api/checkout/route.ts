@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { checkoutSchema } from '@/lib/validators';
 import { createRouteClient, createServiceRoleClient } from '@/lib/supabase/server';
-import { generateOrderNumber } from '@/lib/order';
+import { createGuestOrderToken, generateOrderNumber } from '@/lib/order';
 import { buildWhatsAppUrl } from '@/lib/whatsapp';
 
 function buildPaymentStatus(paymentMethod: 'cash_on_delivery' | 'pay_on_pickup' | 'send_money') {
@@ -65,6 +65,18 @@ export async function POST(request: Request) {
     const paymentStatus = buildPaymentStatus(payload.paymentMethod);
 
     const adminSupabase = createServiceRoleClient();
+    const { data: authData } = await supabase.auth.getUser();
+    const authUser = authData.user;
+    let profileId: string | null = null;
+
+    if (authUser) {
+      const { data: profile } = await adminSupabase
+        .from('profiles')
+        .select('id')
+        .eq('auth_user_id', authUser.id)
+        .maybeSingle();
+      profileId = profile?.id ?? null;
+    }
     console.info('Checkout write client selected', { helper: 'createServiceRoleClient' });
 
     let order: { id: string; order_number: string } | null = null;
@@ -84,6 +96,8 @@ export async function POST(request: Request) {
         notes: payload.notes,
         payment_method: payload.paymentMethod,
         payment_status: paymentStatus,
+        profile_id: profileId,
+        customer_email: authUser?.email ?? null,
         subtotal,
         delivery_fee: deliveryFee,
         total,
@@ -155,6 +169,8 @@ export async function POST(request: Request) {
       currency: restaurant.currency ?? 'KES',
     });
 
+    const guestToken = createGuestOrderToken(order.order_number, payload.customerPhone);
+
     return NextResponse.json({
       orderNumber: order.order_number,
       total,
@@ -165,6 +181,7 @@ export async function POST(request: Request) {
       paymentNumber: restaurant.payment_number,
       restaurantPhone: restaurant.phone,
       customerPhone: payload.customerPhone,
+      guestToken,
       redirectTo: payload.paymentMethod === 'send_money' ? `/order/pending/${order.order_number}` : `/order/success/${order.order_number}`,
     });
   } catch (error) {

@@ -6,7 +6,7 @@ export default async function OrderSuccessPage({
   searchParams,
 }: {
   params: { orderNumber: string };
-  searchParams: { total?: string; payment?: string; type?: string; wa?: string };
+  searchParams: { total?: string; payment?: string; type?: string; wa?: string; guestToken?: string; customerPhone?: string };
 }) {
   const restaurant = await getRestaurant();
   const whatsappLink = searchParams.wa ?? `https://wa.me/${restaurant.whatsapp_number ?? ''}`;
@@ -25,6 +25,7 @@ export default async function OrderSuccessPage({
 
       <div className="mt-6 flex flex-col gap-3">
         <a href={whatsappLink} target="_blank" rel="noreferrer" className="btn-primary">WhatsApp Confirmation</a>
+        <Link href={`/order/${params.orderNumber}?guestToken=${encodeURIComponent(searchParams.guestToken ?? '')}&customerPhone=${encodeURIComponent(searchParams.customerPhone ?? '')}`} className="btn-secondary">View Order Status</Link>
         <Link href="/menu" className="btn-secondary">Return to Menu</Link>
       </div>
     </main>

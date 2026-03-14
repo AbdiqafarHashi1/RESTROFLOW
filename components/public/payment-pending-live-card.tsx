@@ -141,6 +141,7 @@ export function PaymentPendingLiveCard({
   customerPhone,
   whatsappLink,
   initialState,
+  guestToken,
 }: {
   orderNumber: string;
   total: string;
@@ -151,12 +152,17 @@ export function PaymentPendingLiveCard({
   customerPhone: string;
   whatsappLink: string;
   initialState: PendingOrderState;
+  guestToken?: string;
 }) {
   const [orderState, setOrderState] = useState<PendingOrderState>(initialState);
 
   const loadOrderState = useCallback(async () => {
     try {
-      const response = await fetch(`/api/order/status?orderNumber=${encodeURIComponent(orderNumber)}`, { cache: 'no-store' });
+      const params = new URLSearchParams({ orderNumber, customerPhone });
+      if (guestToken) {
+        params.set('guestToken', guestToken);
+      }
+      const response = await fetch(`/api/order/status?${params.toString()}`, { cache: 'no-store' });
       if (!response.ok) {
         return;
       }
@@ -168,7 +174,7 @@ export function PaymentPendingLiveCard({
     } catch {
       // keep current state
     }
-  }, [orderNumber]);
+  }, [orderNumber, guestToken, customerPhone]);
 
   useEffect(() => {
     const id = window.setInterval(loadOrderState, POLL_INTERVAL_MS);
@@ -214,7 +220,8 @@ export function PaymentPendingLiveCard({
       <div className="mt-4 grid gap-3">
         <a href={whatsappLink} target="_blank" rel="noreferrer" className="btn-primary w-full text-center">WhatsApp Us</a>
         <a href={`tel:${restaurantPhone}`} className="btn-secondary w-full text-center">Call Restaurant</a>
-        <MarkPaidButton orderNumber={orderNumber} disabled={!canMarkPaid} onSuccess={loadOrderState} />
+        <MarkPaidButton orderNumber={orderNumber} guestToken={guestToken} customerPhone={customerPhone} disabled={!canMarkPaid} onSuccess={loadOrderState} />
+        <Link href={`/order/${orderNumber}${guestToken ? `?guestToken=${encodeURIComponent(guestToken)}&customerPhone=${encodeURIComponent(customerPhone)}` : ""}`} className="btn-secondary w-full text-center">View Order Status</Link>
         <Link href="/menu" className="btn-secondary w-full text-center">Return to Menu</Link>
       </div>
     </>
