@@ -1,8 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { readActiveOrderRef } from '@/lib/customer-orders';
+import { useOrderLiveRefresh } from '@/lib/use-order-live-refresh';
 
 type OrderPayload = {
   order_number: string;
@@ -76,11 +77,12 @@ export function OrderTrackingCard({
     }
   }, [orderNumber, guestToken, customerPhone]);
 
-  useEffect(() => {
-    loadOrder();
-    const timer = window.setInterval(loadOrder, 7000);
-    return () => window.clearInterval(timer);
-  }, [loadOrder]);
+  useOrderLiveRefresh({
+    orderNumber,
+    refresh: loadOrder,
+    pollIntervalMs: 7000,
+    runImmediate: true,
+  });
 
   if (loading && !order) {
     return <p className="mt-6 text-sm text-muted">Loading your order...</p>;
