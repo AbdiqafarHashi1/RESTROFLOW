@@ -23,6 +23,9 @@ export function buildWhatsAppUrl(params: {
     'Items:',
     ...params.items.map((item) => `- ${item.item_name} x${item.quantity}`),
     `Total: ${(params.currency ?? 'KES')} ${params.total}`,
+    '',
+    'Order Status:',
+    `https://beirut.delivery/order/${params.orderNumber}`,
   ];
 
   return `https://wa.me/${params.whatsappNumber}?text=${encodeURIComponent(lines.join('\n'))}`;

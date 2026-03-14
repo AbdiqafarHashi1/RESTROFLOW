@@ -1,8 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { MarkPaidButton } from '@/components/public/mark-paid-button';
+import { useOrderLiveRefresh } from '@/lib/use-order-live-refresh';
 import type { OrderStatus, PaymentStatus } from '@/types';
 
 type PendingOrderState = {
@@ -176,10 +177,12 @@ export function PaymentPendingLiveCard({
     }
   }, [orderNumber, guestToken, customerPhone]);
 
-  useEffect(() => {
-    const id = window.setInterval(loadOrderState, POLL_INTERVAL_MS);
-    return () => window.clearInterval(id);
-  }, [loadOrderState]);
+  useOrderLiveRefresh({
+    orderNumber,
+    refresh: loadOrderState,
+    pollIntervalMs: POLL_INTERVAL_MS,
+    runImmediate: false,
+  });
 
   const stateCopy = useMemo(() => getStateCopy(orderState), [orderState]);
   const tone = getToneClasses(stateCopy.tone);
