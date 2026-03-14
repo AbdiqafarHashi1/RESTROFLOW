@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Category, MenuItem, Restaurant } from '@/types';
+import { Category, MenuItem, Promotion, Restaurant } from '@/types';
 import { HeroSection } from '@/components/public/hero';
 import { Navbar } from '@/components/public/navbar';
 import { formatCurrency } from '@/lib/formatters';
@@ -17,11 +17,13 @@ export function HomeOrdering({
   categories,
   items,
   currentYear,
+  promotion,
 }: {
   restaurant: Restaurant;
   categories: Category[];
   items: MenuItem[];
   currentYear: number;
+  promotion: Promotion | null;
 }) {
   const [active, setActive] = useState('all');
   const [query, setQuery] = useState('');
@@ -37,7 +39,7 @@ export function HomeOrdering({
   return (
     <div>
       <Navbar restaurantName={restaurant.name} />
-      <HeroSection restaurant={restaurant} />
+      <HeroSection restaurant={restaurant} promotion={promotion} />
 
       <section id="bestsellers" className="container-padding mx-auto max-w-6xl py-6 md:py-8">
         <div className="flex items-end justify-between gap-3">

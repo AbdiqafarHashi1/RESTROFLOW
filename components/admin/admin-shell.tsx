@@ -11,6 +11,7 @@ const links = [
   ['Menu', '/admin/menu'],
   ['Categories', '/admin/categories'],
   ['Customers', '/admin/customers'],
+  ['Promotions', '/admin/promotions'],
   ['Settings', '/admin/settings'],
 ] as const;
 

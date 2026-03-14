@@ -4,7 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { createServerClient } from '@/lib/supabase/server';
 import type { UpdateRestaurantSettingsState } from '@/lib/admin-settings';
 import { defaultUpsertMenuItemState, UpsertMenuItemState } from '@/lib/admin-menu';
-import { getMenuBucketMissingMessage, MENU_IMAGES_BUCKET } from '@/lib/constants/storage';
+import { defaultUpsertPromotionState, UpsertPromotionState } from '@/lib/admin-promotions';
+import { getMenuBucketMissingMessage, getPromotionsBucketMissingMessage, MENU_IMAGES_BUCKET, PROMOTIONS_IMAGES_BUCKET } from '@/lib/constants/storage';
 
 function slugify(value: string) {
   return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
@@ -223,5 +224,111 @@ export async function updateRestaurantSettings(
       success: false,
       message: 'Unexpected error while saving settings. Please try again.',
     };
+  }
+}
+
+export async function upsertPromotion(
+  _previousState: UpsertPromotionState,
+  formData: FormData,
+): Promise<UpsertPromotionState> {
+  try {
+    const supabase = createServerClient();
+    const id = String(formData.get('id') ?? '');
+    const title = String(formData.get('title') ?? '').trim();
+
+    if (!title) {
+      return {
+        success: false,
+        message: 'Promotion title is required.',
+      };
+    }
+
+    const subtitle = String(formData.get('subtitle') ?? '').trim();
+    const imageUrlInput = String(formData.get('image_url') ?? '').trim();
+    const imageFile = formData.get('image_file');
+    const shouldActivate = formData.get('active') === 'on';
+    let imageUrl = imageUrlInput;
+
+    if (imageFile instanceof File && imageFile.size > 0) {
+      const extension = imageFile.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const filePath = `promotions/${id || slugify(title) || 'promotion'}-${crypto.randomUUID()}.${extension}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from(PROMOTIONS_IMAGES_BUCKET)
+        .upload(filePath, imageFile, {
+          cacheControl: '3600',
+          upsert: true,
+          contentType: imageFile.type || 'image/jpeg',
+        });
+
+      if (uploadError) {
+        if (isMissingBucketError(uploadError.message)) {
+          return {
+            success: false,
+            message: getPromotionsBucketMissingMessage(),
+          };
+        }
+
+        return {
+          success: false,
+          message: `Image upload failed: ${uploadError.message}`,
+        };
+      }
+
+      const { data: publicData } = supabase.storage.from(PROMOTIONS_IMAGES_BUCKET).getPublicUrl(filePath);
+      imageUrl = publicData.publicUrl;
+    }
+
+    if (shouldActivate) {
+      await supabase.from('promotions').update({ active: false }).eq('active', true);
+    }
+
+    const payload = {
+      id: id || undefined,
+      title,
+      subtitle,
+      image_url: imageUrl,
+      active: shouldActivate,
+    };
+
+    const { error } = await supabase.from('promotions').upsert(payload);
+
+    if (error) {
+      return {
+        success: false,
+        message: `Could not save promotion: ${error.message}`,
+      };
+    }
+
+    revalidatePath('/');
+    revalidatePath('/admin/promotions');
+
+    return {
+      success: true,
+      message: id ? 'Promotion updated.' : 'Promotion created.',
+    };
+  } catch (error) {
+    console.error('Unexpected promotion upsert error', error);
+    return {
+      ...defaultUpsertPromotionState,
+      message: 'Unexpected error while saving this promotion. Please try again.',
+    };
+  }
+}
+
+export async function setActivePromotion(formData: FormData) {
+  try {
+    const supabase = createServerClient();
+    const id = String(formData.get('id') ?? '');
+
+    if (!id) return;
+
+    await supabase.from('promotions').update({ active: false }).eq('active', true);
+    await supabase.from('promotions').update({ active: true }).eq('id', id);
+
+    revalidatePath('/');
+    revalidatePath('/admin/promotions');
+  } catch (error) {
+    console.error('Failed to set active promotion', error);
   }
 }
