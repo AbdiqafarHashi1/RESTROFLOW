@@ -5,7 +5,7 @@ import { createServerClient } from '@/lib/supabase/server';
 import type { UpdateRestaurantSettingsState } from '@/lib/admin-settings';
 import { defaultUpsertMenuItemState, UpsertMenuItemState } from '@/lib/admin-menu';
 import { defaultUpsertPromotionState, UpsertPromotionState } from '@/lib/admin-promotions';
-import { getMenuBucketMissingMessage, getPromotionsBucketMissingMessage, getPromotionsUploadErrorMessage, HERO_BANNER_PATH, MENU_IMAGES_BUCKET, PROMOTIONS_IMAGES_BUCKET } from '@/lib/constants/storage';
+import { detectMenuUploadsBucket, getMenuBucketMissingMessage, getPromotionsBucketMissingMessage, getPromotionsUploadErrorMessage, HERO_BANNER_PATH, MENU_IMAGES_BUCKET } from '@/lib/constants/storage';
 
 function slugify(value: string) {
   return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
@@ -63,6 +63,17 @@ function isMissingBucketError(message: string) {
   return normalized.includes('bucket not found') || normalized.includes('bucket does not exist');
 }
 
+async function resolveLiveMenuImagesBucket(supabase: ReturnType<typeof createServerClient>) {
+  const { data: menuImageRows } = await supabase
+    .from('menu_items')
+    .select('image_url')
+    .not('image_url', 'is', null)
+    .limit(200);
+
+  const detectedBucket = detectMenuUploadsBucket((menuImageRows ?? []).map((row) => row.image_url as string | null));
+  return detectedBucket ?? MENU_IMAGES_BUCKET;
+}
+
 export async function upsertMenuItem(
   _previousState: UpsertMenuItemState,
   formData: FormData,
@@ -78,8 +89,9 @@ export async function upsertMenuItem(
     if (imageFile instanceof File && imageFile.size > 0) {
       const extension = imageFile.name.split('.').pop()?.toLowerCase() || 'jpg';
       const filePath = `menu-items/${id || slugify(name) || 'item'}-${crypto.randomUUID()}.${extension}`;
+      const liveMenuBucket = await resolveLiveMenuImagesBucket(supabase);
       const { error: uploadError } = await supabase.storage
-        .from(MENU_IMAGES_BUCKET)
+        .from(liveMenuBucket)
         .upload(filePath, imageFile, {
           cacheControl: '3600',
           upsert: true,
@@ -90,7 +102,7 @@ export async function upsertMenuItem(
         if (isMissingBucketError(uploadError.message)) {
           return {
             success: false,
-            message: getMenuBucketMissingMessage(),
+            message: getMenuBucketMissingMessage(liveMenuBucket),
           };
         }
 
@@ -100,7 +112,7 @@ export async function upsertMenuItem(
         };
       }
 
-      const { data: publicData } = supabase.storage.from(MENU_IMAGES_BUCKET).getPublicUrl(filePath);
+      const { data: publicData } = supabase.storage.from(liveMenuBucket).getPublicUrl(filePath);
       imageUrl = publicData.publicUrl;
     }
 
@@ -242,8 +254,9 @@ export async function upsertPromotion(
     }
 
     const filePath = HERO_BANNER_PATH;
+    const liveMenuBucket = await resolveLiveMenuImagesBucket(supabase);
     const { error: uploadError } = await supabase.storage
-      .from(PROMOTIONS_IMAGES_BUCKET)
+      .from(liveMenuBucket)
       .upload(filePath, imageFile, {
         cacheControl: '3600',
         upsert: true,
@@ -254,13 +267,13 @@ export async function upsertPromotion(
       if (isMissingBucketError(uploadError.message)) {
         return {
           success: false,
-          message: getPromotionsBucketMissingMessage(),
+          message: getPromotionsBucketMissingMessage(liveMenuBucket),
         };
       }
 
       return {
         success: false,
-        message: `${getPromotionsUploadErrorMessage()} (${uploadError.message})`,
+        message: `${getPromotionsUploadErrorMessage(liveMenuBucket)} (${uploadError.message})`,
       };
     }
 
