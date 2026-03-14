@@ -1,8 +1,10 @@
 import Image from 'next/image';
-import { Restaurant } from '@/types';
+import { Promotion, Restaurant } from '@/types';
 
-export function HeroSection({ restaurant }: { restaurant: Restaurant }) {
-  const heroImage = restaurant.hero_image_url || '/images/hero-food.svg';
+export function HeroSection({ restaurant, promotion }: { restaurant: Restaurant; promotion: Promotion | null }) {
+  const heroImage = promotion?.image_url || restaurant.hero_image_url || '/images/hero-food.svg';
+  const promoTitle = promotion?.title?.trim();
+  const promoSubtitle = promotion?.subtitle?.trim();
 
   return (
     <section className="container-padding mx-auto max-w-6xl pb-8 pt-5 md:pb-14 md:pt-10">
@@ -31,13 +33,19 @@ export function HeroSection({ restaurant }: { restaurant: Restaurant }) {
             <div className="relative aspect-[4/3] w-full md:aspect-[5/6]">
               <Image
                 src={heroImage}
-                alt={`${restaurant.name} hero food spread`}
+                alt={promoTitle ? `${promoTitle} promotion banner` : `${restaurant.name} hero food spread`}
                 fill
                 priority
                 sizes="(max-width: 768px) 100vw, 42vw"
                 className="object-cover"
               />
             </div>
+            {promoTitle ? (
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4 text-white md:p-5">
+                <h2 className="text-lg font-semibold md:text-xl">{promoTitle}</h2>
+                {promoSubtitle ? <p className="mt-1 text-xs text-white/85 md:text-sm">{promoSubtitle}</p> : null}
+              </div>
+            ) : null}
           </div>
         </div>
       </div>

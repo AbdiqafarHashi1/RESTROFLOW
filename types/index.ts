@@ -61,3 +61,12 @@ export interface Profile {
   email?: string | null;
   full_name?: string | null;
 }
+
+export interface Promotion {
+  id: string;
+  title: string;
+  subtitle?: string | null;
+  image_url?: string | null;
+  active: boolean;
+  created_at: string;
+}
