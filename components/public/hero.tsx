@@ -2,13 +2,13 @@
 
 import Image from 'next/image';
 import { useState } from 'react';
-import { Restaurant } from '@/types';
-import { getPublicStorageObjectUrl, MENU_IMAGES_BUCKET, HERO_BANNER_PATH } from '@/lib/constants/storage';
+import { MenuItem, Restaurant } from '@/types';
+import { detectMenuUploadsBucket, getPublicStorageObjectUrl, MENU_IMAGES_BUCKET, HERO_BANNER_PATH } from '@/lib/constants/storage';
 
-const HOMEPAGE_HERO_BANNER = getPublicStorageObjectUrl(MENU_IMAGES_BUCKET, HERO_BANNER_PATH);
-
-export function HeroSection({ restaurant }: { restaurant: Restaurant }) {
+export function HeroSection({ restaurant, items }: { restaurant: Restaurant; items: MenuItem[] }) {
   const [showDefault, setShowDefault] = useState(false);
+  const detectedMenuBucket = detectMenuUploadsBucket(items.map((item) => item.image_url));
+  const homepageHeroBanner = getPublicStorageObjectUrl(detectedMenuBucket ?? MENU_IMAGES_BUCKET, HERO_BANNER_PATH);
 
   if (showDefault) {
     return (
@@ -57,7 +57,7 @@ export function HeroSection({ restaurant }: { restaurant: Restaurant }) {
       <div className="relative overflow-hidden rounded-[1.75rem] border border-primary/25 bg-[#121212] shadow-[0_20px_45px_rgba(0,0,0,0.45)]">
         <div className="relative aspect-[5/4] w-full sm:aspect-[16/10] lg:aspect-[16/7]">
           <Image
-            src={HOMEPAGE_HERO_BANNER}
+            src={homepageHeroBanner}
             alt={`${restaurant.name} homepage banner`}
             fill
             priority
