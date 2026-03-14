@@ -233,70 +233,34 @@ export async function upsertPromotion(
 ): Promise<UpsertPromotionState> {
   try {
     const supabase = createServerClient();
-    const id = String(formData.get('id') ?? '');
-    const title = String(formData.get('title') ?? '').trim();
-
-    if (!title) {
+    const imageFile = formData.get('image_file');
+    if (!(imageFile instanceof File) || imageFile.size === 0) {
       return {
         success: false,
-        message: 'Promotion title is required.',
+        message: 'Please choose an image to upload.',
       };
     }
 
-    const subtitle = String(formData.get('subtitle') ?? '').trim();
-    const imageUrlInput = String(formData.get('image_url') ?? '').trim();
-    const imageFile = formData.get('image_file');
-    const shouldActivate = formData.get('active') === 'on';
-    let imageUrl = imageUrlInput;
+    const filePath = 'hero/home-banner.jpg';
+    const { error: uploadError } = await supabase.storage
+      .from(PROMOTIONS_IMAGES_BUCKET)
+      .upload(filePath, imageFile, {
+        cacheControl: '3600',
+        upsert: true,
+        contentType: imageFile.type || 'image/jpeg',
+      });
 
-    if (imageFile instanceof File && imageFile.size > 0) {
-      const extension = imageFile.name.split('.').pop()?.toLowerCase() || 'jpg';
-      const filePath = `promotions/${id || slugify(title) || 'promotion'}-${crypto.randomUUID()}.${extension}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from(PROMOTIONS_IMAGES_BUCKET)
-        .upload(filePath, imageFile, {
-          cacheControl: '3600',
-          upsert: true,
-          contentType: imageFile.type || 'image/jpeg',
-        });
-
-      if (uploadError) {
-        if (isMissingBucketError(uploadError.message)) {
-          return {
-            success: false,
-            message: getPromotionsBucketMissingMessage(),
-          };
-        }
-
+    if (uploadError) {
+      if (isMissingBucketError(uploadError.message)) {
         return {
           success: false,
-          message: `Image upload failed: ${uploadError.message}`,
+          message: getPromotionsBucketMissingMessage(),
         };
       }
 
-      const { data: publicData } = supabase.storage.from(PROMOTIONS_IMAGES_BUCKET).getPublicUrl(filePath);
-      imageUrl = publicData.publicUrl;
-    }
-
-    if (shouldActivate) {
-      await supabase.from('promotions').update({ active: false }).eq('active', true);
-    }
-
-    const payload = {
-      id: id || undefined,
-      title,
-      subtitle,
-      image_url: imageUrl,
-      active: shouldActivate,
-    };
-
-    const { error } = await supabase.from('promotions').upsert(payload);
-
-    if (error) {
       return {
         success: false,
-        message: `Could not save promotion: ${error.message}`,
+        message: `Image upload failed: ${uploadError.message}`,
       };
     }
 
@@ -305,7 +269,7 @@ export async function upsertPromotion(
 
     return {
       success: true,
-      message: id ? 'Promotion updated.' : 'Promotion created.',
+      message: 'Homepage banner updated successfully',
     };
   } catch (error) {
     console.error('Unexpected promotion upsert error', error);
@@ -313,22 +277,5 @@ export async function upsertPromotion(
       ...defaultUpsertPromotionState,
       message: 'Unexpected error while saving this promotion. Please try again.',
     };
-  }
-}
-
-export async function setActivePromotion(formData: FormData) {
-  try {
-    const supabase = createServerClient();
-    const id = String(formData.get('id') ?? '');
-
-    if (!id) return;
-
-    await supabase.from('promotions').update({ active: false }).eq('active', true);
-    await supabase.from('promotions').update({ active: true }).eq('id', id);
-
-    revalidatePath('/');
-    revalidatePath('/admin/promotions');
-  } catch (error) {
-    console.error('Failed to set active promotion', error);
   }
 }

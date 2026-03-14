@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Category, MenuItem, Promotion, Restaurant } from '@/types';
+import { Category, MenuItem, Restaurant } from '@/types';
 import { HomeOrdering } from '@/components/public/home-ordering';
 import { PublicErrorBoundary } from '@/components/public/public-error-boundary';
 
@@ -10,13 +10,11 @@ export function PublicShell({
   categories,
   items,
   currentYear,
-  promotion,
 }: {
   restaurant: Restaurant;
   categories: Category[];
   items: MenuItem[];
   currentYear: number;
-  promotion: Promotion | null;
 }) {
   useEffect(() => {
     console.info('[public-shell] Hydrated customer shell.', {
@@ -28,7 +26,7 @@ export function PublicShell({
 
   return (
     <PublicErrorBoundary>
-      <HomeOrdering restaurant={restaurant} categories={categories} items={items} currentYear={currentYear} promotion={promotion} />
+      <HomeOrdering restaurant={restaurant} categories={categories} items={items} currentYear={currentYear} />
     </PublicErrorBoundary>
   );
 }
