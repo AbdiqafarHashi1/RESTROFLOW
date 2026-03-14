@@ -1,10 +1,13 @@
-import Image from 'next/image';
-import { Promotion, Restaurant } from '@/types';
+'use client';
 
-export function HeroSection({ restaurant, promotion }: { restaurant: Restaurant; promotion: Promotion | null }) {
-  const heroImage = promotion?.image_url || restaurant.hero_image_url || '/images/hero-food.svg';
-  const promoTitle = promotion?.title?.trim();
-  const promoSubtitle = promotion?.subtitle?.trim();
+import Image from 'next/image';
+import { useState } from 'react';
+import { Restaurant } from '@/types';
+
+const HOMEPAGE_HERO_BANNER = '/storage/v1/object/public/images/hero/home-banner.jpg';
+
+export function HeroSection({ restaurant }: { restaurant: Restaurant }) {
+  const [showDefault, setShowDefault] = useState(false);
 
   return (
     <section className="container-padding mx-auto max-w-6xl pb-8 pt-5 md:pb-14 md:pt-10">
@@ -31,21 +34,27 @@ export function HeroSection({ restaurant, promotion }: { restaurant: Restaurant;
 
           <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-[#1a1a1a]">
             <div className="relative aspect-[4/3] w-full md:aspect-[5/6]">
-              <Image
-                src={heroImage}
-                alt={promoTitle ? `${promoTitle} promotion banner` : `${restaurant.name} hero food spread`}
-                fill
-                priority
-                sizes="(max-width: 768px) 100vw, 42vw"
-                className="object-cover"
-              />
+              {showDefault ? (
+                <Image
+                  src="/images/hero-food.svg"
+                  alt={`${restaurant.name} hero food spread`}
+                  fill
+                  priority
+                  sizes="(max-width: 768px) 100vw, 42vw"
+                  className="object-cover"
+                />
+              ) : (
+                <Image
+                  src={HOMEPAGE_HERO_BANNER}
+                  alt={`${restaurant.name} homepage banner`}
+                  fill
+                  priority
+                  sizes="(max-width: 768px) 100vw, 42vw"
+                  className="object-cover"
+                  onError={() => setShowDefault(true)}
+                />
+              )}
             </div>
-            {promoTitle ? (
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4 text-white md:p-5">
-                <h2 className="text-lg font-semibold md:text-xl">{promoTitle}</h2>
-                {promoSubtitle ? <p className="mt-1 text-xs text-white/85 md:text-sm">{promoSubtitle}</p> : null}
-              </div>
-            ) : null}
           </div>
         </div>
       </div>

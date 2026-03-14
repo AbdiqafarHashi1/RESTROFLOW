@@ -1,4 +1,4 @@
-export const MENU_IMAGES_BUCKET = 'menu-images';
+export const MENU_IMAGES_BUCKET = 'images';
 export const PROMOTIONS_IMAGES_BUCKET = MENU_IMAGES_BUCKET;
 
 export function getMenuBucketMissingMessage() {
