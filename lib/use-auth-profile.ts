@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createBrowserClient } from '@/lib/supabase/client';
+import { tryCreateBrowserClient } from '@/lib/supabase/client';
 import { Profile } from '@/types';
 
 export function useAuthProfile() {
@@ -10,11 +10,19 @@ export function useAuthProfile() {
   const [profile, setProfile] = useState<Profile | null>(null);
 
   useEffect(() => {
-    const supabase = createBrowserClient();
+    const supabase = tryCreateBrowserClient();
+
+    if (!supabase) {
+      setLoading(false);
+      setUserId(null);
+      setProfile(null);
+      return;
+    }
+    const client = supabase;
 
     async function load() {
       try {
-        const { data: authData, error: authError } = await supabase.auth.getUser();
+        const { data: authData, error: authError } = await client.auth.getUser();
         if (authError) {
           setUserId(null);
           setProfile(null);
@@ -29,7 +37,7 @@ export function useAuthProfile() {
         }
 
         setUserId(user.id);
-        const { data: existing, error: profileError } = await supabase
+        const { data: existing, error: profileError } = await client
           .from('profiles')
           .select('*')
           .eq('auth_user_id', user.id)
@@ -51,7 +59,7 @@ export function useAuthProfile() {
 
     load();
 
-    const { data: subscription } = supabase.auth.onAuthStateChange(() => {
+    const { data: subscription } = client.auth.onAuthStateChange(() => {
       setLoading(true);
       load();
     });

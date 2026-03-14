@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Restaurant } from '@/types';
 
-export function SiteFooter({ restaurant }: { restaurant: Restaurant }) {
+export function SiteFooter({ restaurant, currentYear }: { restaurant: Restaurant; currentYear: number }) {
   return (
     <footer className="mt-16 border-t border-border bg-surface">
       <div className="container-padding mx-auto grid max-w-6xl gap-8 py-10 md:grid-cols-4">
@@ -32,7 +32,7 @@ export function SiteFooter({ restaurant }: { restaurant: Restaurant }) {
         </div>
       </div>
       <div className="border-t border-border py-4 text-center text-xs text-muted">
-        <p>© {new Date().getFullYear()} {restaurant.name}. All rights reserved.</p>
+        <p>© {currentYear} {restaurant.name}. All rights reserved.</p>
         <Link href="/admin/login" className="mt-1 inline-block text-[11px] text-muted/70 hover:text-muted">Admin Login</Link>
       </div>
     </footer>
