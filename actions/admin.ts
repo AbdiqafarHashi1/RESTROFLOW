@@ -5,7 +5,7 @@ import { createServerClient } from '@/lib/supabase/server';
 import type { UpdateRestaurantSettingsState } from '@/lib/admin-settings';
 import { defaultUpsertMenuItemState, UpsertMenuItemState } from '@/lib/admin-menu';
 import { defaultUpsertPromotionState, UpsertPromotionState } from '@/lib/admin-promotions';
-import { getMenuBucketMissingMessage, getPromotionsBucketMissingMessage, MENU_IMAGES_BUCKET, PROMOTIONS_IMAGES_BUCKET } from '@/lib/constants/storage';
+import { getMenuBucketMissingMessage, getPromotionsBucketMissingMessage, getPromotionsUploadErrorMessage, HERO_BANNER_PATH, MENU_IMAGES_BUCKET, PROMOTIONS_IMAGES_BUCKET } from '@/lib/constants/storage';
 
 function slugify(value: string) {
   return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
@@ -241,7 +241,7 @@ export async function upsertPromotion(
       };
     }
 
-    const filePath = 'hero/home-banner.jpg';
+    const filePath = HERO_BANNER_PATH;
     const { error: uploadError } = await supabase.storage
       .from(PROMOTIONS_IMAGES_BUCKET)
       .upload(filePath, imageFile, {
@@ -260,7 +260,7 @@ export async function upsertPromotion(
 
       return {
         success: false,
-        message: `Image upload failed: ${uploadError.message}`,
+        message: `${getPromotionsUploadErrorMessage()} (${uploadError.message})`,
       };
     }
 
