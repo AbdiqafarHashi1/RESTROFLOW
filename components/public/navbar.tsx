@@ -3,16 +3,24 @@
 import Link from 'next/link';
 import { ShoppingBag, User } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { useCart } from '@/lib/use-cart';
 import { useAuthProfile } from '@/lib/use-auth-profile';
+import { readActiveOrderRef } from '@/lib/customer-orders';
 
 export function Navbar({ restaurantName = 'Beirut Express' }: { restaurantName?: string }) {
   const { items } = useCart();
   const { isAuthenticated } = useAuthProfile();
   const router = useRouter();
   const pathname = usePathname();
+  const [activeOrderNumber, setActiveOrderNumber] = useState('');
   const safeItems = Array.isArray(items) ? items : [];
   const cartCount = safeItems.reduce((sum, item) => sum + (item?.quantity ?? 0), 0);
+
+  useEffect(() => {
+    const ref = readActiveOrderRef();
+    setActiveOrderNumber(ref?.orderNumber ?? '');
+  }, [pathname]);
 
   function handleOrderNow() {
     if (safeItems.length > 0) {
@@ -39,6 +47,7 @@ export function Navbar({ restaurantName = 'Beirut Express' }: { restaurantName?:
           <a href="#how-it-works" className="hover:text-white">How it Works</a>
         </nav>
         <div className="flex items-center gap-2">
+          {activeOrderNumber ? <Link href={`/order/${activeOrderNumber}`} className="rounded-xl border border-border px-3 py-2 text-xs text-primary">View Order Status</Link> : null}
           <Link href="/cart" className="relative rounded-xl border border-border p-2 text-muted hover:text-white" aria-label="Cart">
             <ShoppingBag size={18} />
             {cartCount > 0 && <span className="absolute -right-1 -top-1 rounded-full bg-primary px-1.5 text-[10px] font-semibold text-black">{cartCount}</span>}

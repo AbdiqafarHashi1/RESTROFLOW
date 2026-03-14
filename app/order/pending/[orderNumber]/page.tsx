@@ -7,7 +7,7 @@ export default async function OrderPendingPaymentPage({
   searchParams,
 }: {
   params: { orderNumber: string };
-  searchParams: { total?: string; payment?: string; type?: string; wa?: string; paymentNumber?: string; restaurantPhone?: string; customerPhone?: string };
+  searchParams: { total?: string; payment?: string; type?: string; wa?: string; paymentNumber?: string; restaurantPhone?: string; customerPhone?: string; guestToken?: string };
 }) {
   const [restaurant, supabase] = await Promise.all([getRestaurant(), Promise.resolve(createServerClient())]);
 
@@ -30,6 +30,7 @@ export default async function OrderPendingPaymentPage({
         restaurantPhone={searchParams.restaurantPhone ?? restaurant.phone ?? ''}
         customerPhone={searchParams.customerPhone ?? ''}
         whatsappLink={whatsappLink}
+        guestToken={searchParams.guestToken ?? ''}
         initialState={
           order ?? {
             order_number: params.orderNumber,

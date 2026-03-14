@@ -10,6 +10,7 @@ import { useCart } from '@/lib/use-cart';
 import { cartSubtotal } from '@/lib/cart';
 import { formatCurrency } from '@/lib/formatters';
 import { Navbar } from '@/components/public/navbar';
+import { saveActiveOrderRef } from '@/lib/customer-orders';
 
 export default function CheckoutPage() {
   const { items, clear, updateQty } = useCart();
@@ -93,6 +94,13 @@ export default function CheckoutPage() {
         return;
       }
 
+      saveActiveOrderRef({
+        orderNumber: data.orderNumber,
+        customerPhone: data.customerPhone,
+        guestToken: data.guestToken,
+        placedAt: new Date().toISOString(),
+      });
+
       const params = new URLSearchParams({
         total: String(data.total),
         payment: data.paymentMethod,
@@ -102,10 +110,11 @@ export default function CheckoutPage() {
         paymentNumber: data.paymentNumber ?? '',
         restaurantPhone: data.restaurantPhone ?? '',
         customerPhone: data.customerPhone ?? '',
+        guestToken: data.guestToken ?? '',
       });
 
       setIsRedirecting(true);
-      clear();
+      await clear();
       router.push(`${data.redirectTo}?${params.toString()}`);
     } catch (error) {
       console.error('Unexpected checkout submission error', error);

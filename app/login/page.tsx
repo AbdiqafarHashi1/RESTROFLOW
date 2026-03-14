@@ -5,9 +5,21 @@ import { useState } from 'react';
 import { Navbar } from '@/components/public/navbar';
 import { createBrowserClient } from '@/lib/supabase/client';
 
+const OTP_PROVIDER_HINTS = ['sms provider', 'phone provider', 'Unsupported phone provider', 'OTP is not enabled'];
+
+function normalizeKenyanPhone(value: string) {
+  const compact = value.replace(/\s+/g, '');
+  if (!compact) return '+254';
+  if (compact.startsWith('+254')) return compact;
+  if (compact.startsWith('254')) return `+${compact}`;
+  if (compact.startsWith('0')) return `+254${compact.slice(1)}`;
+  if (compact.startsWith('+')) return compact;
+  return `+254${compact}`;
+}
+
 export default function LoginPage() {
   const [mode, setMode] = useState<'phone' | 'email'>('phone');
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState('+254');
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [phoneCodeSent, setPhoneCodeSent] = useState(false);
@@ -20,9 +32,17 @@ export default function LoginPage() {
     setError('');
     setMessage('');
     const supabase = createBrowserClient();
-    const { error: otpError } = await supabase.auth.signInWithOtp({ phone });
+    const normalizedPhone = normalizeKenyanPhone(phone);
+    setPhone(normalizedPhone);
+
+    const { error: otpError } = await supabase.auth.signInWithOtp({ phone: normalizedPhone });
     if (otpError) {
-      setError(otpError.message);
+      const providerMissing = OTP_PROVIDER_HINTS.some((hint) => otpError.message.toLowerCase().includes(hint.toLowerCase()));
+      if (providerMissing) {
+        setError('Phone login is currently unavailable. Please use email login or continue as guest while we finish SMS setup.');
+      } else {
+        setError(otpError.message);
+      }
     } else {
       setPhoneCodeSent(true);
       setMessage('Code sent to your phone.');
@@ -73,7 +93,8 @@ export default function LoginPage() {
 
           {mode === 'phone' ? (
             <div className="mt-4 space-y-3">
-              <input className="input" placeholder="+961XXXXXXXX" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <input className="input" placeholder="+254712345678" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <p className="text-xs text-muted">Use a Kenyan number in +254 format.</p>
               {phoneCodeSent && <input className="input" placeholder="Enter one-time code" value={code} onChange={(e) => setCode(e.target.value)} />}
               {!phoneCodeSent ? (
                 <button type="button" disabled={loading || !phone} className="btn-primary w-full disabled:opacity-60" onClick={continueWithPhone}>Send one-time code</button>

@@ -4,10 +4,14 @@ import { useState } from 'react';
 
 export function MarkPaidButton({
   orderNumber,
+  guestToken,
+  customerPhone,
   disabled = false,
   onSuccess,
 }: {
   orderNumber: string;
+  guestToken?: string;
+  customerPhone?: string;
   disabled?: boolean;
   onSuccess?: () => void;
 }) {
@@ -23,7 +27,7 @@ export function MarkPaidButton({
       const response = await fetch('/api/order/payment-marked', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderNumber }),
+        body: JSON.stringify({ orderNumber, guestToken, customerPhone }),
       });
       const payload = await response.json();
 
