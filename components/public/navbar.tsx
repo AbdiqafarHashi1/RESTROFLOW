@@ -44,20 +44,20 @@ export function Navbar({ restaurantName = 'Beirut Express' }: { restaurantName?:
             <Link href="/" className="font-heading text-xl tracking-wide">{restaurantName}</Link>
             <button type="button" onClick={handleOrderNow} className="btn-primary py-2 text-sm">Order Now</button>
           </div>
-          <div className="mt-2.5 grid grid-cols-3 gap-2">
+          <div className="mt-2.5 grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
             {activeOrderNumber ? (
-              <Link href={`/order/${activeOrderNumber}`} className="rounded-xl border border-border px-2 py-2 text-center text-xs text-primary">
+              <Link href={`/order/${activeOrderNumber}`} className="rounded-xl border border-border px-3 py-2 text-center text-xs font-medium text-primary">
                 View Order Status
               </Link>
             ) : (
-              <span className="rounded-xl border border-border px-2 py-2 text-center text-xs text-muted">View Order Status</span>
+              <span className="rounded-xl border border-border px-3 py-2 text-center text-xs font-medium text-muted">View Order Status</span>
             )}
-            <Link href="/cart" className="relative rounded-xl border border-border px-2 py-2 text-center text-xs text-muted hover:text-white" aria-label="Cart">
-              Cart
+            <Link href="/cart" className="relative inline-flex size-9 items-center justify-center rounded-xl border border-border text-muted transition-colors hover:text-white" aria-label="Cart">
+              <ShoppingBag size={17} />
               {cartCount > 0 && <span className="absolute -right-1 -top-1 rounded-full bg-primary px-1.5 text-[10px] font-semibold text-black">{cartCount}</span>}
             </Link>
-            <Link href={isAuthenticated ? '/account' : '/login'} className="rounded-xl border border-border px-2 py-2 text-center text-xs text-muted hover:text-white" aria-label="Account">
-              {isAuthenticated ? 'Profile' : 'Login'}
+            <Link href={isAuthenticated ? '/account' : '/login'} className="inline-flex size-9 items-center justify-center rounded-xl border border-border text-muted transition-colors hover:text-white" aria-label={isAuthenticated ? 'Profile' : 'Login'}>
+              <User size={17} />
             </Link>
           </div>
         </div>
