@@ -1,14 +1,35 @@
 'use client';
 
 import Image from 'next/image';
-import { useState } from 'react';
-import { MenuItem, Restaurant } from '@/types';
-import { detectMenuUploadsBucket, getPublicStorageObjectUrl, MENU_IMAGES_BUCKET, HERO_BANNER_PATH } from '@/lib/constants/storage';
+import { useMemo, useState } from 'react';
+import { Restaurant } from '@/types';
+import { getPublicStorageObjectUrl, HERO_BANNER_BUCKET, HERO_BANNER_PATH } from '@/lib/constants/storage';
 
-export function HeroSection({ restaurant, items }: { restaurant: Restaurant; items: MenuItem[] }) {
+function appendCacheBuster(url: string, cacheBuster: string) {
+  if (url.endsWith('.svg') || url.includes('.svg?')) return url;
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}v=${encodeURIComponent(cacheBuster)}`;
+}
+
+export function HeroSection({ restaurant }: { restaurant: Restaurant }) {
   const [showDefault, setShowDefault] = useState(false);
-  const detectedMenuBucket = detectMenuUploadsBucket(items.map((item) => item.image_url));
-  const homepageHeroBanner = getPublicStorageObjectUrl(detectedMenuBucket ?? MENU_IMAGES_BUCKET, HERO_BANNER_PATH);
+
+  const homepageHeroBanner = useMemo(() => {
+    const configuredHeroUrl = restaurant.hero_image_url?.trim();
+    const baseHeroUrl = configuredHeroUrl || getPublicStorageObjectUrl(HERO_BANNER_BUCKET, HERO_BANNER_PATH);
+    const cacheVersion = restaurant.updated_at || 'hero-banner';
+    const resolvedUrl = appendCacheBuster(baseHeroUrl, cacheVersion);
+
+    console.info('[public/hero] Resolved homepage hero banner source.', {
+      bucket: HERO_BANNER_BUCKET,
+      objectPath: HERO_BANNER_PATH,
+      configuredHeroUrl: configuredHeroUrl || null,
+      resolvedUrl,
+      cacheVersion,
+    });
+
+    return resolvedUrl;
+  }, [restaurant.hero_image_url, restaurant.updated_at]);
 
   if (showDefault) {
     return (
@@ -63,7 +84,12 @@ export function HeroSection({ restaurant, items }: { restaurant: Restaurant; ite
             priority
             sizes="100vw"
             className="object-cover"
-            onError={() => setShowDefault(true)}
+            onError={() => {
+              console.warn('[public/hero] Failed to load homepage hero banner, falling back to default card.', {
+                attemptedUrl: homepageHeroBanner,
+              });
+              setShowDefault(true);
+            }}
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/45 to-black/25" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/25" />

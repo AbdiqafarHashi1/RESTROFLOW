@@ -21,6 +21,7 @@ export interface Restaurant {
   is_open: boolean;
   hero_title?: string;
   hero_subtitle?: string;
+  updated_at?: string;
 }
 
 export interface Category {
