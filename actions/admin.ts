@@ -5,7 +5,7 @@ import { createServerClient } from '@/lib/supabase/server';
 import type { UpdateRestaurantSettingsState } from '@/lib/admin-settings';
 import { defaultUpsertMenuItemState, UpsertMenuItemState } from '@/lib/admin-menu';
 import { defaultUpsertPromotionState, UpsertPromotionState } from '@/lib/admin-promotions';
-import { detectMenuUploadsBucket, getMenuBucketMissingMessage, getPromotionsBucketMissingMessage, getPromotionsUploadErrorMessage, HERO_BANNER_PATH, MENU_IMAGES_BUCKET } from '@/lib/constants/storage';
+import { detectMenuUploadsBucket, getMenuBucketMissingMessage, getPromotionsBucketMissingMessage, getPromotionsUploadErrorMessage, HERO_BANNER_BUCKET, HERO_BANNER_PATH, MENU_IMAGES_BUCKET, getPublicStorageObjectUrl } from '@/lib/constants/storage';
 
 function slugify(value: string) {
   return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
@@ -254,11 +254,11 @@ export async function upsertPromotion(
     }
 
     const filePath = HERO_BANNER_PATH;
-    const liveMenuBucket = await resolveLiveMenuImagesBucket(supabase);
+    const heroBucket = HERO_BANNER_BUCKET;
     const { error: uploadError } = await supabase.storage
-      .from(liveMenuBucket)
+      .from(heroBucket)
       .upload(filePath, imageFile, {
-        cacheControl: '3600',
+        cacheControl: '0',
         upsert: true,
         contentType: imageFile.type || 'image/jpeg',
       });
@@ -267,13 +267,32 @@ export async function upsertPromotion(
       if (isMissingBucketError(uploadError.message)) {
         return {
           success: false,
-          message: getPromotionsBucketMissingMessage(liveMenuBucket),
+          message: getPromotionsBucketMissingMessage(heroBucket),
         };
       }
 
       return {
         success: false,
-        message: `${getPromotionsUploadErrorMessage(liveMenuBucket)} (${uploadError.message})`,
+        message: `${getPromotionsUploadErrorMessage(heroBucket)} (${uploadError.message})`,
+      };
+    }
+
+
+    const heroPublicUrl = getPublicStorageObjectUrl(heroBucket, filePath);
+    console.info('[admin/promotions] Uploaded homepage hero banner.', {
+      bucket: heroBucket,
+      objectPath: filePath,
+      publicUrl: heroPublicUrl,
+    });
+    const { error: restaurantUpdateError } = await supabase
+      .from('restaurants')
+      .update({ hero_image_url: heroPublicUrl, updated_at: new Date().toISOString() })
+      .eq('slug', 'beirut-express');
+
+    if (restaurantUpdateError) {
+      return {
+        success: false,
+        message: `Banner uploaded, but could not save homepage hero URL: ${restaurantUpdateError.message}`,
       };
     }
 

@@ -37,7 +37,7 @@ export function HomeOrdering({
   return (
     <div>
       <Navbar restaurantName={restaurant.name} />
-      <HeroSection restaurant={restaurant} items={items} />
+      <HeroSection restaurant={restaurant} />
 
       <section id="bestsellers" className="container-padding mx-auto max-w-6xl py-6 md:py-8">
         <div className="flex items-end justify-between gap-3">

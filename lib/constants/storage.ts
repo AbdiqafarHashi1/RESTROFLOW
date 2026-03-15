@@ -1,10 +1,13 @@
 export const MENU_IMAGES_BUCKET = 'images';
 export const PROMOTIONS_IMAGES_BUCKET = MENU_IMAGES_BUCKET;
+export const HERO_BANNER_BUCKET = PROMOTIONS_IMAGES_BUCKET;
 export const HERO_BANNER_PATH = 'hero/home-banner.jpg';
 const SUPABASE_PUBLIC_OBJECT_SEGMENT = '/storage/v1/object/public/';
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, '');
 
 export function getPublicStorageObjectUrl(bucket: string, path: string) {
-  return `/storage/v1/object/public/${bucket}/${path}`;
+  const objectPath = `/storage/v1/object/public/${bucket}/${path}`;
+  return SUPABASE_URL ? `${SUPABASE_URL}${objectPath}` : objectPath;
 }
 
 export type MenuImageSource = 'uploaded-storage-image' | 'direct-image-url' | 'legacy-storage-path';
